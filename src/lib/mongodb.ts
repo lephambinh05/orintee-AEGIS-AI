@@ -1,0 +1,65 @@
+import mongoose from 'mongoose';
+
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://aegis:aegis123@mongo:27017/aegisdb?authSource=admin';
+
+if (!MONGODB_URI) {
+  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+}
+
+/**
+ * Global is used here to maintain a cached connection across hot reloads
+ * in development. This prevents connections growing exponentially
+ * during API Route usage.
+ */
+let cached = (global as any).mongoose;
+
+if (!cached) {
+  cached = (global as any).mongoose = { conn: null, promise: null };
+}
+
+async function connectDB() {
+  if (cached.conn) {
+    return cached.conn;
+  }
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+    };
+
+    let attempts = 0;
+    const maxAttempts = 3;
+    const retryDelay = 2000; // 2 seconds
+
+    const connectWithRetry = async (): Promise<typeof mongoose> => {
+      try {
+        attempts++;
+        console.log(`[MongoDB] Connection attempt ${attempts}/${maxAttempts}...`);
+        const conn = await mongoose.connect(MONGODB_URI, opts);
+        console.log('[MongoDB] Connected successfully');
+        return conn;
+      } catch (error) {
+        if (attempts < maxAttempts) {
+          console.error(`[MongoDB] Connection failed: ${(error as Error).message}. Retrying in ${retryDelay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          return connectWithRetry();
+        }
+        console.error('[MongoDB] Max connection attempts reached. Failed to connect.');
+        throw error;
+      }
+    };
+
+    cached.promise = connectWithRetry().then((m) => m);
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+
+  return cached.conn;
+}
+
+export default connectDB;
