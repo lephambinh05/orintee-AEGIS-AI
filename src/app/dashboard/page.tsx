@@ -59,11 +59,7 @@ export default function Dashboard() {
     
     try {
       // 1. Execute on Smart Contract
-      const txHash = await executeStrategy({
-        symbol: selectedAsset,
-        isLong: analysis.isLong,
-        entryPrice: analysis.riskGuard.entryPrice
-      });
+      const txHash = await executeStrategy();
       
       if (!txHash) return; // Error already handled in useMetamask
       
@@ -81,7 +77,7 @@ export default function Dashboard() {
 
       setIsSuccess(true);
       setTimeout(() => setIsSuccess(false), 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Execution loop failed:", err);
     }
   };

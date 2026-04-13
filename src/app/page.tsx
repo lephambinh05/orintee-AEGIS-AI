@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/shared/Badge';
 import { motion } from 'framer-motion';
 import { useEffect } from 'react';
-import Link from 'next/link';
 import { useMetamask } from '@/hooks/useMetamask';
 
 const fadeInUp = {

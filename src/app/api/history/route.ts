@@ -104,8 +104,8 @@ export async function POST(request: NextRequest) {
     try {
       const saved = await strategy.save();
       return apiResponse(saved, 201);
-    } catch (dbError: any) {
-      if (dbError.code === 11000) {
+    } catch (dbError: unknown) {
+      if (dbError && typeof dbError === 'object' && 'code' in dbError && dbError.code === 11000) {
         return errorResponse('Duplicate txHash', 'DUPLICATE_TX', 409);
       }
       throw dbError;

@@ -18,7 +18,7 @@ export function useMetamask() {
 
   // 1. Switch Network Logic
   const switchToBaseSepolia = useCallback(async () => {
-    const ethereum = (window as any).ethereum;
+    const ethereum = (window as any).ethereum; // Using any here as standard practice for window.ethereum cast
     if (!ethereum) return;
 
     try {
@@ -26,8 +26,9 @@ export function useMetamask() {
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: BASE_SEPOLIA_CHAIN_ID }],
       });
-    } catch (switchError: any) {
-      if (switchError.code === 4902) {
+    } catch (switchError: unknown) {
+      const error = switchError as { code: number };
+      if (error.code === 4902) {
         try {
           await ethereum.request({
             method: 'wallet_addEthereumChain',
@@ -45,7 +46,7 @@ export function useMetamask() {
           console.error('Failed to add network', addError);
           toast.error("Không thể thêm mạng Base Sepolia");
         }
-      } else if (switchError.code === 4001) {
+      } else if (error.code === 4001) {
         toast.error("Bạn đã từ chối chuyển mạng");
       } else {
         toast.error("Vui lòng chuyển mạng để tiếp tục");
@@ -82,8 +83,8 @@ export function useMetamask() {
 
     setIsProcessing(true);
     try {
-      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-      const currentChainId = await ethereum.request({ method: 'eth_chainId' });
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' }) as string[];
+      const currentChainId = await ethereum.request({ method: 'eth_chainId' }) as string;
       
       const userAddress = accounts[0].toLowerCase();
       setWallet(userAddress, currentChainId);
@@ -94,13 +95,14 @@ export function useMetamask() {
 
       toast.success("Kết nối thành công!");
       router.push('/dashboard'); // T3.3 auto redirect
-    } catch (error: any) {
-      if (error.code === 4001) {
+    } catch (error: unknown) {
+      const err = error as { code: number; message: string };
+      if (err.code === 4001) {
         toast.error("Từ chối kết nối", { description: "Bạn đã từ chối yêu cầu kết nối ví." });
-      } else if (error.code === -32002) {
+      } else if (err.code === -32002) {
         toast.warning("Yêu cầu đang chờ", { description: "Vui lòng mở ví Metamask để hoàn tất kết nối." });
       } else {
-        toast.error("Lỗi kết nối", { description: error.message });
+        toast.error("Lỗi kết nối", { description: err.message });
       }
     } finally {
       setIsProcessing(false);
@@ -108,26 +110,28 @@ export function useMetamask() {
   }, [setWallet, switchToBaseSepolia, router]);
 
   // 4. Smart Contract Execution (T3.6)
-  const executeStrategy = useCallback(async (params: any) => {
+  const executeStrategy = useCallback(async () => {
     const ethereum = (window as any).ethereum;
     if (!ethereum || !address) return null;
 
     setIsProcessing(true);
     try {
       const provider = new ethers.providers.Web3Provider(ethereum);
-      const signer = provider.getSigner();
+      // Remove unused signer variable
+      await provider.getSigner();
 
       // Simulated transaction logic
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       const txHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('');
       return txHash;
-    } catch (error: any) {
-      if (error.code === 4001) {
+    } catch (error: unknown) {
+      const err = error as { code: number; message: string };
+      if (err.code === 4001) {
         // T3.6 Exact Phrase
         toast.error("Bạn đã từ chối giao dịch", { description: "Lệnh ký đã bị hủy trên ví." });
       } else {
-        toast.error("Giao dịch thất bại", { description: error.message });
+        toast.error("Giao dịch thất bại", { description: err.message });
       }
       return null;
     } finally {

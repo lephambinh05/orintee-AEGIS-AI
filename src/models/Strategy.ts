@@ -1,4 +1,5 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import { Schema, model, models } from 'mongoose';
+import { IStrategy } from '@/types';
 
 const StrategySchema = new Schema(
   {
@@ -51,7 +52,7 @@ const StrategySchema = new Schema(
       type: String,
       enum: ['Long', 'Short'],
       required: true,
-      default: function(this: any) {
+      default: function(this: IStrategy) {
         return this.isLong ? 'Long' : 'Short';
       }
     },

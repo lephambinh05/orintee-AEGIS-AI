@@ -36,3 +36,23 @@ To run the end-to-end verification suite:
 2. Visit the dashboard at [http://localhost/dashboard](http://localhost/dashboard).
 3. Connect MetaMask and verify the Base Sepolia network auto-switch.
 4. Execute a strategy and verify the on-chain proof in the History tab.
+
+---
+
+## 🛡️ Multi-User Architecture & Security
+
+Aegis AI is built to handle multiple concurrent users with production-grade stability and security:
+
+### 1. Wallet-Based Isolation
+Identity is managed entirely via the user's wallet address.
+- **Frontend Isolation**: User sessions are brower-isolated via `sessionStorage`.
+- **Backend Isolation**: API responses are strictly filtered by the connected wallet address.
+
+### 2. Infrastructure Protection
+- **Nginx Rate Limiting**: Protects the API layer from DDoS and spam by limiting requests to **5 req/s per IP** with a burst threshold of 10.
+- **Database Pooling**: Configured with `maxPoolSize: 10` to ensure stable resource allocation under heavy concurrent load.
+
+### 3. Trustless Verification
+The system enforces security via the **Blockchain Proof (`txHash`)**:
+- **Uniqueness**: Every transaction hash is indexed as a unique constraint in MongoDB, preventing duplicate strategy submissions.
+- **Anti-Spam**: Successful database entry requires a valid `txHash`, ensuring that only users who have actually executed on-chain have their data recorded.
