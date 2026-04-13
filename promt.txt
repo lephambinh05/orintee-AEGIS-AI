@@ -1,0 +1,520 @@
+You are a senior full-stack developer and UI/UX designer.
+Build a complete web application called "AEGIS AI" — a crypto
+asset analysis platform powered by AI with blockchain
+transparency.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎨 DESIGN SYSTEM — FOLLOW STRICTLY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FONT:
+- Import: https://fonts.google.com/specimen/Be+Vietnam+Pro
+- Weights: 400 (regular), 500 (medium), 600 (semibold), 700 (bold)
+- Apply to ALL elements globally: font-family: 'Be Vietnam Pro', sans-serif
+
+COLOR PALETTE (CSS Variables):
+:root {
+  --bg-primary:    #ffffff;   /* Nền trắng chính */
+  --bg-secondary:  #f5f5f5;   /* Nền xám nhạt card */
+  --bg-tertiary:   #ebebeb;   /* Nền xám đậm hơn hover */
+  --border:        #e4e4e7;   /* Viền card, input */
+  --border-hover:  #d4d4d8;   /* Viền hover */
+  --text-primary:  #09090b;   /* Chữ đen chính */
+  --text-secondary:#71717a;   /* Chữ xám phụ */
+  --text-muted:    #a1a1aa;   /* Placeholder, label nhỏ */
+  --green-primary: #16a34a;   /* Nút CTA xanh lá */
+  --green-hover:   #15803d;   /* Hover nút xanh lá */
+  --green-light:   #dcfce7;   /* Badge nền xanh nhạt */
+  --green-text:    #166534;   /* Chữ trong badge xanh */
+  --red-primary:   #dc2626;   /* Stop loss, warning */
+  --red-light:     #fee2e2;   /* Nền badge đỏ nhạt */
+  --yellow-primary:#d97706;   /* Neutral score */
+  --yellow-light:  #fef3c7;   /* Nền badge vàng nhạt */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07),
+               0 2px 4px -1px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08),
+               0 4px 6px -2px rgba(0,0,0,0.04);
+}
+
+BORDER RADIUS (Vercel-style — không bo tròn quá):
+- Button:      border-radius: 6px
+- Card:        border-radius: 8px
+- Input:       border-radius: 6px
+- Badge/Tag:   border-radius: 4px
+- Modal/Popup: border-radius: 10px
+- Gauge chart: border-radius: 50% (tròn hoàn toàn)
+
+SPACING SYSTEM (base 4px):
+- xs: 4px | sm: 8px | md: 12px | lg: 16px
+- xl: 24px | 2xl: 32px | 3xl: 48px | 4xl: 64px
+
+BUTTON VARIANTS:
+/* Primary CTA */
+.btn-primary {
+  background: #16a34a;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease,
+              box-shadow 0.15s ease;
+  letter-spacing: -0.01em;
+}
+.btn-primary:hover {
+  background: #15803d;
+  box-shadow: 0 0 0 3px rgba(22,163,74,0.2);
+}
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled {
+  background: #d4d4d8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Secondary */
+.btn-secondary {
+  background: #ffffff;
+  color: #09090b;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #e4e4e7;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.btn-secondary:hover {
+  background: #f5f5f5;
+  border-color: #d4d4d8;
+}
+
+/* Large Execute Button — Đặc biệt */
+.btn-execute {
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: #16a34a;
+  color: white;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+.btn-execute::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.12) 0%,
+    transparent 60%);
+}
+.btn-execute:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(22,163,74,0.35);
+}
+
+CARD COMPONENT:
+.card {
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.card:hover {
+  border-color: #d4d4d8;
+  box-shadow: var(--shadow-md);
+}
+
+INPUT / DROPDOWN:
+.input, .select {
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  color: #09090b;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input:focus, .select:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22,163,74,0.15);
+}
+
+TOAST NOTIFICATION:
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideInRight 0.25s ease;
+  z-index: 9999;
+}
+.toast-success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+.toast-error {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #9f1239;
+}
+.toast-warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+@keyframes slideInRight {
+  from { transform: translateX(100px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 PAGE 1 — LANDING PAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LAYOUT:
+- Full viewport height (100vh)
+- Background: #ffffff với dot pattern nhẹ:
+  background-image: radial-gradient(#e4e4e7 1px, transparent 1px);
+  background-size: 24px 24px;
+- Centered content, max-width: 1200px, margin: auto
+
+HEADER (height: 60px, sticky top):
+- Left: Logo "AEGIS AI" — font-size: 18px, font-weight: 700,
+  color: #09090b. Trước logo có icon hình khiên (shield)
+  màu #16a34a, size 20px
+- Right: Button "Connect Wallet" — dùng .btn-secondary,
+  icon ví ở bên trái chữ
+- Border-bottom: 1px solid #e4e4e7
+- Background: rgba(255,255,255,0.8), backdrop-filter: blur(12px)
+
+HERO SECTION (Canh giữa màn hình, padding-top: 120px):
+- Badge trên cùng: Pill nhỏ với text "✦ AI-Powered Risk Management"
+  Style: background #f0fdf4, border: 1px solid #bbf7d0,
+  color: #166534, border-radius: 100px,
+  padding: 4px 12px, font-size: 12px, font-weight: 600
+- H1: "Strategic Command Center"
+  font-size: 56px, font-weight: 700, color: #09090b
+  letter-spacing: -0.04em, line-height: 1.1
+  Dòng "Command Center" có màu gradient:
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  -webkit-background-clip: text; color: transparent;
+- Subtitle: "Phân tích tài sản số với AI — Quản trị rủi ro thông minh —
+  Minh bạch Blockchain trên Base Network"
+  font-size: 18px, color: #71717a, font-weight: 400,
+  max-width: 520px, line-height: 1.6, margin: 16px auto
+- CTA Button: "Launch App →" — dùng .btn-primary,
+  padding: 12px 28px, font-size: 15px, margin-top: 32px
+- Sub-text dưới nút: "Base Sepolia Testnet · No fees required"
+  font-size: 12px, color: #a1a1aa, margin-top: 12px
+
+VALUE PROPS (3 cards, margin-top: 80px):
+Grid: display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+Mỗi card dùng .card + padding: 24px:
+  Card 1: Icon 📊 — Title "Phân tích Đa nguồn" (font-weight: 600,
+    font-size: 15px) — Desc "RSI, On-chain data và Market sentiment
+    tổng hợp thành Aegis Score duy nhất" (font-size: 14px,
+    color: #71717a, margin-top: 8px)
+  Card 2: Icon 🛡️ — "Quản trị Rủi ro" — Desc "Tự động tính Entry,
+    Stop Loss và Take Profit dựa trên ATR thực tế"
+  Card 3: Icon ⛓️ — "Minh bạch Blockchain" — Desc "Mọi chiến lược
+    được ghi vĩnh viễn lên Base Sepolia, tra cứu bất kỳ lúc nào"
+  Mỗi card có border-left: 3px solid #16a34a ở bên trái
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 PAGE 2 — MAIN DASHBOARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+OVERALL LAYOUT:
+- Background: #f5f5f5
+- Sidebar trái cố định width 48px (chứa icon nav) — optional
+- Main content: full width minus sidebar
+
+TOP BAR (height: 56px, background #ffffff,
+  border-bottom: 1px solid #e4e4e7):
+Display flex, align-items center, padding: 0 24px, gap: 16px:
+- Asset Selector Dropdown: .select style,
+  Options: BTCUSDT | ETHUSDT | SOLUSDT
+  Width: 140px, font-weight: 600
+- Price Display:
+    Span giá: font-size: 20px, font-weight: 700, color: #09090b
+    Span % change: font-size: 13px, font-weight: 600
+    Nếu dương: color: #16a34a, background: #dcfce7,
+      padding: 2px 6px, border-radius: 4px, text "+2.34%"
+    Nếu âm: color: #dc2626, background: #fee2e2, text "-1.23%"
+- News Ticker (flex: 1, overflow: hidden):
+    Text chạy ngang animation marquee, font-size: 12px,
+    color: #71717a. Prefix "📰 " mỗi tin
+    CSS: @keyframes marquee {
+      from {transform: translateX(100%)}
+      to {transform: translateX(-100%)}
+    }
+    animation: marquee 30s linear infinite
+- Wallet Badge (right):
+    Hình tròn màu xanh lá + địa chỉ ví rút gọn "0x1a2...3b4c"
+    font-size: 13px, font-weight: 500
+
+MAIN CONTENT GRID (padding: 16px 24px):
+display: grid;
+grid-template-columns: 1fr 380px;
+gap: 16px;
+height: calc(100vh - 56px);
+
+--- CỘT TRÁI (Biểu đồ) ---
+.card với padding: 0, overflow: hidden:
+  Header card: padding: 12px 16px,
+    border-bottom: 1px solid #e4e4e7,
+    display flex, justify-content space-between:
+    - Left: Text "BTC/USDT · 1H" font-weight: 600, font-size: 14px
+    - Right: 3 nút timeframe "1H" "4H" "1D"
+      Active: background #09090b, color white, border-radius: 4px
+      Inactive: color #71717a, border-radius: 4px
+      Padding: 4px 10px, font-size: 12px, font-weight: 600
+  Chart container: chiếm toàn bộ chiều cao còn lại
+  Dùng TradingView Lightweight Charts, theme sáng
+
+--- CỘT PHẢI (4 khối xếp dọc, gap: 12px) ---
+
+KHỐI 1 — AEGIS SCORE (.card):
+  Title: "Aegis Score" font-size: 13px, font-weight: 600,
+    color: #71717a, text-transform: uppercase,
+    letter-spacing: 0.05em
+  Gauge Chart (SVG Arc):
+    - SVG viewBox: "0 0 200 120"
+    - Arc nền: stroke #e4e4e7, stroke-width 14,
+      stroke-linecap round
+    - Arc điểm: stroke màu động (đỏ/vàng/xanh theo score),
+      animation transition 0.8s ease
+    - Số điểm ở giữa: font-size 36px, font-weight 700
+    - Label dưới: "BULLISH" / "NEUTRAL" / "BEARISH"
+      badge với màu tương ứng
+  Màu theo điểm:
+    0-39: #dc2626 (đỏ - Bearish)
+    40-59: #d97706 (vàng - Neutral)
+    60-100: #16a34a (xanh - Bullish)
+
+KHỐI 2 — INSIGHT CARDS (.card):
+  Title: "Market Intelligence"
+  3 rows, mỗi row:
+    display flex, justify-content space-between,
+    align-items center, padding: 8px 0,
+    border-bottom: 1px solid #f5f5f5 (trừ dòng cuối)
+    - Left: Icon + Label (font-size 13px, color #71717a)
+      "💰 Dòng tiền" | "📰 Sentiment" | "📈 Kỹ thuật"
+    - Right: Badge trạng thái
+      Positive: background #dcfce7, color #166534,
+        text "Tích cực", border-radius 4px,
+        padding 2px 8px, font-size 12px, font-weight 600
+      Negative: background #fee2e2, color #991b1b
+      Neutral: background #fef3c7, color #92400e
+
+KHỐI 3 — RISK GUARD (.card):
+  Title: "Risk Guard" với icon 🛡️
+  3 rows với layout rõ ràng:
+
+  Row "Vùng Mua":
+    Label: font-size 12px, color #71717a
+    Value: font-size 15px, font-weight 700, color #09090b
+    Badge: "ENTRY", background #f5f5f5, color #71717a,
+      font-size 10px, font-weight 700, border-radius 3px,
+      padding 1px 5px
+
+  Row "Điểm Cắt Lỗ":
+    Value: color #dc2626, font-weight 700
+    Badge: "STOP", background #fee2e2, color #dc2626
+    Icon ↓ màu đỏ ở trái
+
+  Row "Điểm Chốt Lời":
+    Value: color #16a34a, font-weight 700
+    Badge: "TARGET", background #dcfce7, color #166534
+    Icon ↑ màu xanh ở trái
+
+  Mỗi row: border-radius 6px, padding 10px 12px,
+    background #fafafa, margin-bottom 6px
+
+KHỐI 4 — EXECUTE BUTTON:
+  Dùng .btn-execute với nội dung:
+    Khi idle: "⚡ Execute Strategy"
+    Khi loading: spinner SVG + " Processing..." (disabled)
+    Khi success: "✓ Strategy Saved!"
+  Dưới nút: text nhỏ "Transaction will be recorded on Base Sepolia"
+    font-size: 12px, color: #a1a1aa, text-align: center,
+    margin-top: 8px
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 PAGE 3 — HISTORY PAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LAYOUT: padding 24px, background #f5f5f5
+
+HEADER ROW:
+  H1: "Transaction History" font-size 24px, font-weight 700
+  Sub: "On-chain records on Base Sepolia Testnet"
+    font-size 14px, color #71717a
+  Right: Badge "Base Sepolia" — background #dbeafe,
+    color #1e40af, border-radius 4px,
+    font-size 12px, font-weight 600
+
+TABLE (.card với padding: 0, overflow: hidden):
+  Table full width, border-collapse: collapse
+
+  HEADER ROW: background #fafafa,
+    border-bottom: 1px solid #e4e4e7:
+    Columns: Thời gian | Cặp GD | Vị thế | Score | Kết quả | On-chain Proof
+    font-size: 12px, font-weight: 600, color: #71717a,
+    text-transform: uppercase, letter-spacing: 0.05em
+    padding: 10px 16px
+
+  DATA ROWS: border-bottom: 1px solid #f5f5f5,
+    font-size: 14px, padding: 12px 16px:
+
+    - Thời gian: color #71717a, font-size 13px
+      "14/07/2025 · 09:42"
+    - Cặp GD: font-weight 600, color #09090b
+      Kèm icon coin nhỏ bên trái
+    - Vị thế:
+      LONG: background #dcfce7, color #166534,
+        border-radius 4px, padding 2px 8px, font-weight 600
+      SHORT: background #fee2e2, color #991b1b
+    - Score: font-weight 700, màu theo điểm số
+    - Kết quả:
+      WIN: "● Win" color #16a34a, font-weight 600
+      LOSS: "● Loss" color #dc2626
+    - On-chain Proof: Link "0x1a2b...9z"
+      color #16a34a, font-weight 600,
+      text-decoration: underline dotted,
+      cursor pointer
+      Hover: color #15803d
+      → onClick: window.open(basescanUrl, '_blank')
+
+  EMPTY STATE (khi chưa có data):
+    Icon 📊 lớn, text "Chưa có giao dịch nào"
+    Sub: "Nhấn Execute Strategy để tạo giao dịch đầu tiên"
+    .btn-primary "Go to Dashboard" căn giữa
+
+PAGINATION:
+  display flex, justify-content: space-between,
+  align-items center, padding: 12px 16px,
+  border-top: 1px solid #e4e4e7:
+  - Left: "Showing 1–10 of 24 records" font-size 13px, color #71717a
+  - Right: Nút "← Prev" và "Next →" dùng .btn-secondary
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ EDGE CASES — BẮT BUỘC XỬ LÝ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. User từ chối ký Metamask:
+   → Toast error: "Transaction rejected by user"
+   → Nút Execute trở về trạng thái idle
+
+2. Không đủ gas:
+   → Toast error: "Insufficient funds for gas fees"
+   → Link "Get Testnet ETH →" mở faucet
+
+3. Disconnect ví đột ngột:
+   → Phát hiện qua window.ethereum 'accountsChanged' event
+   → Redirect về Landing Page
+   → Toast warning: "Wallet disconnected"
+
+4. API Binance lỗi:
+   → Dùng mock data, hiện Toast: "Using simulated data"
+   → Icon ⚠️ nhỏ cạnh giá tiền
+
+5. Execute đang loading:
+   → Disable nút, text "Processing..."
+   → Spinner CSS thuần (không dùng thư viện)
+   → Prevent double-click hoàn toàn
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚙️ TECHNICAL IMPLEMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FRAMEWORK: Next.js 14 (App Router) + TypeScript
+STYLING: Tailwind CSS + CSS Variables trên
+WEB3: RainbowKit + Wagmi + Ethers.js
+CHART: TradingView Lightweight Charts npm package
+BLOCKCHAIN: Base Sepolia Testnet (chainId: 84532)
+
+SMART CONTRACT CALL:
+const tx = await contract.savePrediction(
+  coinPair,          // string: "BTC/USDT"
+  entryPrice,        // uint256 (price * 10^8)
+  stopLoss,          // uint256
+  takeProfit,        // uint256
+  aegisScore,        // uint8 (0-100, integer only)
+  isLong             // bool
+);
+
+AI SCORE FORMULA (tính phía client):
+const rsi = generateRSI();         // 0-100
+const onChain = generateOnChain(); // 0-100
+const sentiment = getSentiment();  // 0-100
+const score = Math.round(rsi * 0.4 + onChain * 0.3 + sentiment * 0.3);
+
+RISK GUARD FORMULA:
+const atr = currentPrice * 0.02; // Giả lập ATR = 2% giá
+const stopLoss   = currentPrice - (atr * 2);
+const takeProfit = currentPrice + (atr * 3);
+
+LOCAL STORAGE SCHEMA:
+interface TradeRecord {
+  id: string;           // crypto.randomUUID()
+  timestamp: number;    // Date.now()
+  coinPair: string;     // "BTC/USDT"
+  position: 'Long' | 'Short';
+  aegisScore: number;
+  entryPrice: number;
+  stopLoss: number;
+  takeProfit: number;
+  status: 'Win' | 'Loss'; // Math.random() > 0.5
+  txHash: string;          // từ Metamask callback
+}
+
+BINANCE API:
+// Giá realtime
+GET https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT
+
+// Nến OHLC
+GET https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=200
+
+MOCK NEWS DATA (Array):
+const NEWS = [
+  "Bitcoin ETF inflows hit $500M amid bullish sentiment",
+  "Fed holds rates — crypto markets react positively",
+  "Base Network TVL surpasses $2.5B milestone",
+  "SOL ecosystem sees 40% surge in developer activity",
+  "On-chain data signals accumulation phase for BTC"
+];
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔁 GLOBAL UI BEHAVIORS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Tất cả transition: 0.15s ease (không dùng 0.3s trở lên)
+- Skeleton loading cho data chưa load:
+  background linear-gradient animating #f5f5f5 → #ebebeb → #f5f5f5
+- Focus ring xanh lá: outline: 2px solid #16a34a; outline-offset: 2px
+- Scrollbar tùy chỉnh: width 4px, màu #d4d4d8, border-radius 2px
+- Không dùng shadow quá đậm — giữ flat + border style như Vercel
+- Navigation giữa pages: Next.js Link không reload trang
