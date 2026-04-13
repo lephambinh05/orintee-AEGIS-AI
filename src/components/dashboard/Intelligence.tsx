@@ -2,11 +2,39 @@
 
 import { Badge } from '../shared/Badge';
 
-export function Intelligence() {
+interface IntelligenceProps {
+  insights?: {
+    cashflow: { label: string; value: 'positive' | 'neutral' | 'negative' };
+    sentiment: { label: string; value: 'positive' | 'neutral' | 'negative' };
+    technical: { label: string; value: 'positive' | 'neutral' | 'negative' };
+  };
+}
+
+export function Intelligence({ insights }: IntelligenceProps) {
+  const getDisplay = (val: 'positive' | 'neutral' | 'negative' | undefined) => {
+    switch (val) {
+      case 'positive': return { text: 'Tích cực', variant: 'success' };
+      case 'negative': return { text: 'Tiêu cực', variant: 'danger' };
+      default: return { text: 'Trung lập', variant: 'warning' };
+    }
+  };
+
   const rows = [
-    { icon: '💰', label: 'Dòng tiền', status: 'Positive', text: 'Tích cực', variant: 'success' },
-    { icon: '📰', label: 'Sentiment', status: 'Neutral', text: 'Trung lập', variant: 'warning' },
-    { icon: '📈', label: 'Kỹ thuật', status: 'Positive', text: 'Tích cực', variant: 'success' },
+    { 
+      icon: '💰', 
+      label: insights?.cashflow.label || 'Dòng tiền', 
+      ...getDisplay(insights?.cashflow.value) 
+    },
+    { 
+      icon: '📰', 
+      label: insights?.sentiment.label || 'Sentiment', 
+      ...getDisplay(insights?.sentiment.value) 
+    },
+    { 
+      icon: '📈', 
+      label: insights?.technical.label || 'Kỹ thuật', 
+      ...getDisplay(insights?.technical.value) 
+    },
   ];
 
   return (

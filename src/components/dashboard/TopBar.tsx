@@ -3,9 +3,11 @@
 import { Badge } from '../shared/Badge';
 import { NewsTicker } from './NewsTicker';
 import { useAegisStore } from '@/store/useStore';
+import { usePriceQuery } from '@/hooks/useMarketData';
 
 export function TopBar() {
-  const { selectedAsset, setSelectedAsset, priceData } = useAegisStore();
+  const { selectedAsset, setSelectedAsset } = useAegisStore();
+  const { data: priceData } = usePriceQuery(selectedAsset);
 
   return (
     <div className="h-[56px] bg-white border-b border-border flex items-center px-6 gap-4">

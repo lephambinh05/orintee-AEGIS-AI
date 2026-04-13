@@ -6,9 +6,9 @@ import { AegisChart } from '@/components/dashboard/AegisChart';
 import { ScoreGauge } from '@/components/dashboard/ScoreGauge';
 import { Intelligence } from '@/components/dashboard/Intelligence';
 import { RiskGuard } from '@/components/dashboard/RiskGuard';
-import { useAegisPrice } from '@/hooks/useAegisPrice';
-import { useAegisLogic } from '@/hooks/useAegisLogic';
 import { useMetamask } from '@/hooks/useMetamask';
+import { usePriceQuery, useKlinesQuery, useAnalyzeQuery } from '@/hooks/useMarketData';
+import { useSaveStrategy } from '@/hooks/useHistory';
 import { useAegisStore } from '@/store/useStore';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -17,38 +17,28 @@ import { GlobalNav } from '@/components/shared/GlobalNav';
 import { DashboardSkeleton } from '@/components/shared/Skeleton';
 
 export default function Dashboard() {
-  const { account, isConnected, isCorrectNetwork, switchChain } = useMetamask();
-  const { selectedAsset, setPriceData, addTradeRecord } = useAegisStore();
+  const { address, isConnected, isCorrectChain, switchToBaseSepolia, executeStrategy, isProcessing } = useMetamask();
+  const { selectedAsset } = useAegisStore();
   const [timeframe, setTimeframe] = useState('1h');
-  const { data: liveData, klines } = useAegisPrice(selectedAsset, timeframe);
-  const calculations = useAegisLogic(liveData?.price, klines);
-
-  const [isExecuting, setIsExecuting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Initial loading state
-  useEffect(() => {
-    if (liveData && calculations) {
-      const timer = setTimeout(() => setIsLoading(false), 800);
-      return () => clearTimeout(timer);
-    }
-  }, [liveData, calculations]);
+  // 1. Data Layer - TanStack Query
+  const { data: priceData, isLoading: isPriceLoading } = usePriceQuery(selectedAsset);
+  const { data: klines, isLoading: isKlinesLoading } = useKlinesQuery(selectedAsset, timeframe);
+  const { data: analysis, isLoading: isAnalyzeLoading } = useAnalyzeQuery(selectedAsset);
+  
+  // 2. Persistence Layer - Mutation
+  const saveStrategyMutation = useSaveStrategy();
 
-  // Sync live price to store
-  useEffect(() => {
-    if (liveData) {
-      setPriceData({ price: liveData.price, change24h: liveData.change24h });
-    }
-  }, [liveData, setPriceData]);
+  const isLoading = isPriceLoading || isKlinesLoading || isAnalyzeLoading;
 
-  // Layer 3: 5-Check Conditions for Execute
+  // Layer 3: Validation Logic
   const canExecute = 
     isConnected && 
-    isCorrectNetwork && 
-    calculations && 
-    !isExecuting && 
-    liveData?.price;
+    isCorrectChain && 
+    analysis && 
+    !isProcessing && 
+    !saveStrategyMutation.isPending;
 
   const handleExecute = async () => {
     if (!isConnected) {
@@ -56,67 +46,43 @@ export default function Dashboard() {
       return;
     }
     
-    if (!isCorrectNetwork) {
+    if (!isCorrectChain) {
       toast.warning("Sai mạng", { description: "Đang yêu cầu chuyển mạng..." });
-      await switchChain();
+      await switchToBaseSepolia();
       return;
     }
 
-    if (!calculations) {
+    if (!analysis) {
       toast.error("Dữ liệu chưa sẵn sàng", { description: "Vui lòng chờ AI phân tích dữ liệu thị trường." });
       return;
     }
     
-    // Lock button immediately
-    setIsExecuting(true);
-    
     try {
-      // Layer 3: Metamask Smart Contract Interaction (Simulated as per prompt instructions)
-      // In a real app, this would be: await contract.savePrediction(...)
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(resolve, 2000);
-        // Simulate potential user rejection or failure
-        // if (Math.random() > 0.9) reject({ code: 4001 }); 
+      // 1. Execute on Smart Contract
+      const txHash = await executeStrategy({
+        symbol: selectedAsset,
+        isLong: analysis.isLong,
+        entryPrice: analysis.riskGuard.entryPrice
       });
       
-      const newRecord = {
-        id: crypto.randomUUID(),
-        timestamp: Date.now(),
+      if (!txHash) return; // Error already handled in useMetamask
+      
+      // 2. Save to Backend
+      saveStrategyMutation.mutate({
+        walletAddress: address,
+        txHash,
         coinPair: selectedAsset,
-        position: (calculations.isLong ? 'Long' : 'Short') as 'Long' | 'Short',
-        aegisScore: calculations.aegisScore,
-        entryPrice: calculations.entryPrice,
-        stopLoss: calculations.stopLoss,
-        takeProfit: calculations.takeProfit,
-        status: (Math.random() > 0.5 ? 'Win' : 'Loss') as 'Win' | 'Loss',
-        txHash: '0x' + Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')
-      };
-      
-      // Layer 4: Wrapped in internal store logic which handles try/catch
-      addTradeRecord(newRecord);
-      
-      toast.success("Chiến lược đã được ghi nhận", {
-        description: `Giao dịch ${selectedAsset} đã được lưu lên Base Sepolia.`
+        aegisScore: analysis.aegisScore,
+        entryPrice: analysis.riskGuard.entryPrice,
+        stopLoss: analysis.riskGuard.stopLoss,
+        takeProfit: analysis.riskGuard.takeProfit,
+        isLong: analysis.isLong
       });
+
       setIsSuccess(true);
       setTimeout(() => setIsSuccess(false), 3000);
     } catch (err: any) {
-      // Layer 3: Handle Metamask error codes
-      if (err.code === 4001) {
-        toast.error("Từ chối giao dịch", { description: "Bạn đã từ chối ký giao dịch trên Metamask." });
-      } else if (err.code === -32000 || err.message?.includes('insufficient funds')) {
-        toast.error("Không đủ Gas", { 
-          description: "Vui lòng nạp thêm ETH vào mạng Base Sepolia để tiếp tục.",
-          action: {
-            label: "Lấy Faucet ETH",
-            onClick: () => window.open('https://sepolia-faucet.pk910.de/', '_blank')
-          }
-        });
-      } else {
-        toast.error("Giao dịch thất bại", { description: err.message || "Đã có lỗi xảy ra khi gọi Smart Contract." });
-      }
-    } finally {
-      setIsExecuting(false);
+      console.error("Execution loop failed:", err);
     }
   };
 
@@ -151,14 +117,14 @@ export default function Dashboard() {
 
         {/* Right Column - Controls */}
         <div className="flex flex-col gap-3 overflow-y-auto no-scrollbar">
-          <ScoreGauge score={calculations?.aegisScore || 0} />
+          <ScoreGauge score={analysis?.aegisScore || 0} />
           
-          <Intelligence />
+          <Intelligence insights={analysis?.insights} />
           
           <RiskGuard 
-            entry={calculations?.entryPrice}
-            stopLoss={calculations?.stopLoss}
-            takeProfit={calculations?.takeProfit}
+            entry={analysis?.riskGuard.entryPrice}
+            stopLoss={analysis?.riskGuard.stopLoss}
+            takeProfit={analysis?.riskGuard.takeProfit}
           />
 
           <div className="flex flex-col gap-2">
@@ -167,7 +133,7 @@ export default function Dashboard() {
               onClick={handleExecute}
               disabled={!canExecute && !isSuccess}
             >
-              {isExecuting ? (
+              {isProcessing || saveStrategyMutation.isPending ? (
                 <div className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -182,7 +148,7 @@ export default function Dashboard() {
               )}
             </button>
             <p className="text-[12px] text-text-muted text-center">
-              {!isConnected ? "Vui lòng kết nối ví" : !isCorrectNetwork ? "Chuyển sang Base Sepolia" : "Giao dịch sẽ được ghi lên Base Sepolia"}
+              {!isConnected ? "Vui lòng kết nối ví" : !isCorrectChain ? "Chuyển sang Base Sepolia" : "Giao dịch sẽ được ghi lên Base Sepolia"}
             </p>
           </div>
         </div>

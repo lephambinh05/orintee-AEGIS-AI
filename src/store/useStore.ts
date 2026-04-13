@@ -1,77 +1,43 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
-interface TradeRecord {
-  id: string;
-  timestamp: number;
-  coinPair: string;
-  position: 'Long' | 'Short';
-  aegisScore: number;
-  entryPrice: number;
-  stopLoss: number;
-  takeProfit: number;
-  status: 'Win' | 'Loss';
-  txHash: string;
-}
-
-interface AegisState {
+interface WalletState {
+  address: string | null;
+  isConnected: boolean;
+  chainId: string | null;
   selectedAsset: string;
+  setWallet: (address: string | null, chainId: string | null) => void;
+  clearWallet: () => void;
   setSelectedAsset: (asset: string) => void;
-  
-  priceData: {
-    price: number;
-    change24h: number;
-  } | null;
-  setPriceData: (data: { price: number; change24h: number } | null) => void;
-  
-  history: TradeRecord[];
-  addTradeRecord: (record: TradeRecord) => void;
 }
 
-export const useAegisStore = create<AegisState>()(
+export const useAegisStore = create<WalletState>()(
   persist(
     (set) => ({
+      address: null,
+      isConnected: false,
+      chainId: null,
       selectedAsset: 'BTCUSDT',
+
+      setWallet: (address, chainId) => set({ 
+        address: address ? address.toLowerCase() : null, 
+        chainId, 
+        isConnected: !!address 
+      }),
+      
+      clearWallet: () => set({ 
+        address: null, 
+        chainId: null, 
+        isConnected: false 
+      }),
+
       setSelectedAsset: (asset) => set({ selectedAsset: asset }),
-      
-      priceData: null,
-      setPriceData: (data) => set({ priceData: data }),
-      
-      history: [],
-      addTradeRecord: (record) => set((state) => ({ 
-        history: [record, ...state.history] 
-      })),
     }),
     {
-      name: 'aegis-storage',
-      partialize: (state) => ({ history: state.history }), // Only persist history
-      storage: {
-        getItem: (name) => {
-          try {
-            const val = localStorage.getItem(name);
-            return val ? JSON.parse(val) : null;
-          } catch (e) {
-            console.error("Local storage read error", e);
-            return null;
-          }
-        },
-        setItem: (name, value) => {
-          try {
-            localStorage.setItem(name, JSON.stringify(value));
-          } catch (e) {
-            console.error("Local storage write error", e);
-          }
-        },
-        removeItem: (name) => {
-          try {
-            localStorage.removeItem(name);
-          } catch (e) {
-            console.error("Local storage remove error", e);
-          }
-        },
-      }
+      name: 'aegis-session-storage',
+      storage: createJSONStorage(() => sessionStorage), // Persist to sessionStorage (clears on tab close)
     }
   )
 );
