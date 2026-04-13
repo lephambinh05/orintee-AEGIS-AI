@@ -64,7 +64,19 @@ export async function POST(request: NextRequest) {
     // 1. Validate inputs
     const validated = CreateStrategySchema.safeParse(body);
     if (!validated.success) {
-      return errorResponse(validated.error.errors[0].message, 'VALIDATION_ERROR', 400);
+      const error = validated.error.issues[0];
+      return Response.json({ 
+        error: error.message, 
+        code: 'VALIDATION_ERROR',
+        field: error.path[0] 
+      }, { 
+        status: 400, 
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        } 
+      });
     }
 
     const { 
@@ -94,7 +106,7 @@ export async function POST(request: NextRequest) {
       return apiResponse(saved, 201);
     } catch (dbError: any) {
       if (dbError.code === 11000) {
-        return errorResponse('Transaction hash already exists', 'DUPLICATE_TX', 400);
+        return errorResponse('Duplicate txHash', 'DUPLICATE_TX', 409);
       }
       throw dbError;
     }

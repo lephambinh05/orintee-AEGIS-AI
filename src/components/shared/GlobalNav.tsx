@@ -8,7 +8,7 @@ import { useMetamask } from '@/hooks/useMetamask';
 
 export function GlobalNav() {
   const pathname = usePathname();
-  const { account, isConnected, connect, switchChain, isCorrectNetwork, isConnecting } = useMetamask();
+  const { address, isConnected, connect, switchToBaseSepolia, isCorrectChain, isProcessing } = useMetamask();
 
   const navItems = [
     { 
@@ -66,16 +66,16 @@ export function GlobalNav() {
         {!isConnected ? (
           <button 
             onClick={connect} 
-            disabled={isConnecting}
+            disabled={isProcessing}
             className="btn-secondary !py-1.5 !px-3 text-[13px] font-semibold border-green-primary/20 hover:border-green-primary"
           >
-            {isConnecting ? "Connecting..." : "Connect Wallet"}
+            {isProcessing ? "Connecting..." : "Connect Wallet"}
           </button>
         ) : (
           <div className="flex items-center gap-3">
-            {!isCorrectNetwork && (
+            {!isCorrectChain && (
               <button
-                onClick={switchChain}
+                onClick={switchToBaseSepolia}
                 className="px-3 py-1.5 bg-red-500 text-white rounded-md text-[13px] font-semibold animate-pulse"
               >
                 Wrong Network
@@ -85,7 +85,7 @@ export function GlobalNav() {
               className="btn-secondary !py-1.5 !px-3 text-[13px] font-semibold flex items-center gap-2"
             >
               <div className="w-2 h-2 rounded-full bg-green-primary" />
-              {account?.slice(0, 6)}...{account?.slice(-4)}
+              {address?.slice(0, 6)}...{address?.slice(-4)}
             </button>
           </div>
         )}

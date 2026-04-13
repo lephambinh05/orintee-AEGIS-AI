@@ -83,9 +83,8 @@ StrategySchema.virtual('shortTxHash').get(function() {
 });
 
 // Sync position if isLong changes
-StrategySchema.pre('save', function(next) {
+StrategySchema.pre('save', async function() {
   this.position = this.isLong ? 'Long' : 'Short';
-  next();
 });
 
 const Strategy = models.Strategy || model('Strategy', StrategySchema);

@@ -27,7 +27,6 @@ export function useMetamask() {
         params: [{ chainId: BASE_SEPOLIA_CHAIN_ID }],
       });
     } catch (switchError: any) {
-      // 4902: Chain not added to MetaMask
       if (switchError.code === 4902) {
         try {
           await ethereum.request({
@@ -46,26 +45,28 @@ export function useMetamask() {
           console.error('Failed to add network', addError);
           toast.error("Không thể thêm mạng Base Sepolia");
         }
+      } else if (switchError.code === 4001) {
+        toast.error("Bạn đã từ chối chuyển mạng");
       } else {
-        toast.error("Vui lòng chuyển sang mạng Base Sepolia");
+        toast.error("Vui lòng chuyển mạng để tiếp tục");
       }
     }
   }, []);
 
-  // 2. Disconnect Logic
+  // 2. Disconnect Logic (T3.4)
   const disconnect = useCallback(() => {
     clearWallet();
-    toast.info("Đã ngắt kết nối ví");
+    toast.info("Wallet disconnected");
     router.push('/');
   }, [clearWallet, router]);
 
-  // 3. Connect Logic
+  // 3. Connect Logic (T3.1, T3.3)
   const connect = useCallback(async () => {
     const ethereum = (window as any).ethereum;
 
     if (typeof ethereum === 'undefined') {
-      toast.error("Chưa cài đặt Metamask", {
-        description: "Vui lòng cài đặt Metamask để sử dụng AEGIS AI.",
+      toast.error("Vui lòng cài Metamask", {
+        description: "Metamask extension is required to use Aegis AI.",
         action: {
           label: "Cài đặt",
           onClick: () => window.open('https://metamask.io/download/', '_blank')
@@ -75,7 +76,7 @@ export function useMetamask() {
     }
 
     if (!ethereum.isMetaMask) {
-      toast.error("Vui lòng dùng Metamask", { description: "Hệ thống chuyên dùng cho ví Metamask chính thức." });
+      toast.error("Vui lòng dùng Metamask", { description: "Please use the official Metamask wallet." });
       return;
     }
 
@@ -92,8 +93,8 @@ export function useMetamask() {
       }
 
       toast.success("Kết nối thành công!");
+      router.push('/dashboard'); // T3.3 auto redirect
     } catch (error: any) {
-      // Handle known error codes
       if (error.code === 4001) {
         toast.error("Từ chối kết nối", { description: "Bạn đã từ chối yêu cầu kết nối ví." });
       } else if (error.code === -32002) {
@@ -104,9 +105,9 @@ export function useMetamask() {
     } finally {
       setIsProcessing(false);
     }
-  }, [setWallet, switchToBaseSepolia]);
+  }, [setWallet, switchToBaseSepolia, router]);
 
-  // 4. Smart Contract Execution
+  // 4. Smart Contract Execution (T3.6)
   const executeStrategy = useCallback(async (params: any) => {
     const ethereum = (window as any).ethereum;
     if (!ethereum || !address) return null;
@@ -116,22 +117,15 @@ export function useMetamask() {
       const provider = new ethers.providers.Web3Provider(ethereum);
       const signer = provider.getSigner();
 
-      // Simulated Contract Interaction (Layer 3)
-      // In production: const contract = new ethers.Contract(ADDR, ABI, signer);
-      // const tx = await contract.savePrediction(...);
-
-      // Simulate network latency and gas signature
+      // Simulated transaction logic
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Generate a mock txHash for demonstration if not calling real contract
       const txHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('');
-      
       return txHash;
     } catch (error: any) {
       if (error.code === 4001) {
-        toast.error("Giao dịch bị từ chối", { description: "Bạn đã hủy lệnh ký trên Metamask." });
-      } else if (error.code === -32603) {
-        toast.error("Lỗi nội bộ", { description: "Vui lòng kiểm tra số dư Gas hoặc thử lại sau." });
+        // T3.6 Exact Phrase
+        toast.error("Bạn đã từ chối giao dịch", { description: "Lệnh ký đã bị hủy trên ví." });
       } else {
         toast.error("Giao dịch thất bại", { description: error.message });
       }

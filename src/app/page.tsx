@@ -22,7 +22,7 @@ const stagger = {
 };
 
 export default function LandingPage() {
-  const { isConnected, connect, isConnecting } = useMetamask();
+  const { isConnected, connect, isProcessing } = useMetamask();
   const router = useRouter();
 
   useEffect(() => {
@@ -56,10 +56,10 @@ export default function LandingPage() {
         <div className="flex items-center gap-4">
           <button 
             onClick={connect} 
-            disabled={isConnecting}
+            disabled={isProcessing}
             className="btn-secondary flex items-center gap-2"
           >
-            {isConnecting ? "Connecting..." : "Connect Wallet →"}
+            {isProcessing ? "Connecting..." : "Connect Wallet →"}
           </button>
         </div>
       </motion.header>
@@ -99,10 +99,10 @@ export default function LandingPage() {
         >
           <button 
             onClick={connect}
-            disabled={isConnecting}
+            disabled={isProcessing}
             className="btn-primary py-3.5 px-8 text-[15px]"
           >
-            {isConnected ? "Launch Dashboard →" : isConnecting ? "Connecting..." : "Connect Wallet →"}
+            {isConnected ? "Launch Dashboard →" : isProcessing ? "Connecting..." : "Connect Wallet →"}
           </button>
           <span className="text-[12px] text-text-muted">
             Base Sepolia Testnet · No fees required

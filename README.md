@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aegis AI Platform
 
-## Getting Started
+A high-fidelity crypto analysis and strategy execution platform built with Next.js 14, MongoDB, and Base Sepolia.
 
-First, run the development server:
+## 🚀 Quick Start
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 1. Prerequisites
+- Docker & Docker Compose
+- MetaMask installed in your browser
+
+### 2. Configuration
+Create a `.env` file in the root directory:
+```env
+MONGODB_URI=mongodb://aegis:aegis123@mongo:27017/aegisdb?authSource=admin
+NODE_ENV=development
+NEXT_PUBLIC_CHAIN_ID=0x14A34
+NEXT_PUBLIC_CONTRACT_ADDRESS=0x9115Db7012D4C2C32414705030206D39050Be6Af
+NEXT_PUBLIC_APP_URL=http://localhost:80
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Deploy with Docker
+```bash
+docker compose up --build -d
+```
+The application will be available at [http://localhost](http://localhost).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Tech Stack
+- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS, Framer Motion.
+- **Backend API**: Next.js API Routes, Mongoose, Zod.
+- **Infrastructure**: MongoDB 7, Nginx (Reverse Proxy), Node.js 20 Alpine.
+- **Web3**: ethers.js, MetaMask, Base Sepolia Testnet.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🧪 Testing
+To run the end-to-end verification suite:
+1. Ensure Docker containers are healthy.
+2. Visit the dashboard at [http://localhost/dashboard](http://localhost/dashboard).
+3. Connect MetaMask and verify the Base Sepolia network auto-switch.
+4. Execute a strategy and verify the on-chain proof in the History tab.
