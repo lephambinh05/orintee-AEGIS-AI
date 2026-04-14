@@ -1,64 +1,102 @@
 import { NextRequest } from 'next/server';
-import { apiResponse } from '@/lib/utils';
-import axios from 'axios';
+import { apiResponse, errorResponse } from '@/lib/utils';
+import { daaFetch, DaaAuthError } from '@/lib/daaClient';
+import { getMockCandles } from '@/constants/mockData';
+import { IDaaCandle } from '@/types';
+import { toDaaSymbol, isValidSymbol } from '@/lib/symbolUtils';
 
-// In-memory cache
+// In-memory cache for candles
 const klineCache = new Map<string, { data: any[]; timestamp: number }>();
 const CACHE_TTL = 60 * 1000; // 60 seconds
 
+const VALID_INTERVALS = ['1h', '4h', '1d'];
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const symbol = searchParams.get('symbol')?.toUpperCase() || 'BTCUSDT';
+  const rawSymbol = searchParams.get('symbol') || '';
   const interval = searchParams.get('interval') || '1h';
-  const limit = parseInt(searchParams.get('limit') || '200');
+  const symbol = toDaaSymbol(rawSymbol);
 
-  const cacheKey = `${symbol}_${interval}_${limit}`;
-  const now = Date.now();
-
-  // 1. Check in-memory cache
-  const cached = klineCache.get(cacheKey);
-  if (cached && (now - cached.timestamp) < CACHE_TTL) {
-    return apiResponse(cached.data);
+  if (!isValidSymbol(symbol)) {
+    return errorResponse('Invalid symbol', 'INVALID_SYMBOL', 400);
+  }
+  if (!VALID_INTERVALS.includes(interval)) {
+    return errorResponse('Invalid interval. Use: 1h, 4h, or 1d', 'INVALID_INTERVAL', 400);
   }
 
+  const cacheKey = `${symbol}-${interval}`;
+  const now = Date.now();
+
   try {
-    // 2. Fetch from Binance
-    const response = await axios.get(`https://api.binance.com/api/v3/klines`, {
-      params: { symbol, interval, limit },
-      timeout: 5000
-    });
+    // 1. Check in-memory cache
+    const cached = klineCache.get(cacheKey);
+    if (cached && (now - cached.timestamp) < CACHE_TTL) {
+      return apiResponse({
+        data: cached.data,
+        isMock: false,
+        isStale: false
+      });
+    }
 
-    // 3. Transform response: time must be in SECONDS
-    const transformed = response.data.map((k: any) => ({
-      time: Math.floor(k[0] / 1000), // ms to seconds
-      open: parseFloat(k[1]),
-      high: parseFloat(k[2]),
-      low: parseFloat(k[3]),
-      close: parseFloat(k[4]),
-      volume: parseFloat(k[5])
-    }));
+    try {
+      // 2. Fetch from DAA
+      const data = await daaFetch<IDaaCandle[]>(`/public/trade-spot/candle?symbol=${symbol}&interval=${interval}`);
+      
+      console.log(`[DAA Klines] Raw response for ${symbol}:`, data.slice(0, 2));
 
-    // 4. Update cache
-    klineCache.set(cacheKey, { data: transformed, timestamp: now });
+      // 3. Transform response: time must be in SECONDS
+      const transformed = data.map((k: IDaaCandle) => ({
+        time: Math.floor(k.openTime / 1000), // ms to seconds
+        open: parseFloat(k.open),
+        high: parseFloat(k.high),
+        low: parseFloat(k.low),
+        close: parseFloat(k.close),
+        volume: parseFloat(k.volume)
+      }));
 
-    return apiResponse(transformed);
+      // 4. Update memory cache
+      klineCache.set(cacheKey, { data: transformed, timestamp: now });
+
+      return apiResponse({
+        data: transformed,
+        isMock: false,
+        isStale: false
+      });
+
+    } catch (apiError) {
+      if (apiError instanceof DaaAuthError) {
+        return apiResponse({
+          data: getMockCandles(symbol, interval),
+          isMock: true,
+          isStale: false,
+          reason: 'auth_error'
+        });
+      }
+
+      // Fallback: Return in-memory cached candles if available (Layer 2)
+      if (cached) {
+        return apiResponse({
+          data: cached.data,
+          isMock: false,
+          isStale: true
+        });
+      }
+
+      // Fallback to mock (Layer 3)
+      return apiResponse({
+        data: getMockCandles(symbol, interval),
+        isMock: true,
+        isStale: false,
+        reason: 'rate_limit'
+      });
+    }
   } catch (error) {
-    console.error('[API Klines] Binance fetch failed:', (error as Error).message);
-
-    // 5. Fallback: Generate mock OHLC data
-    const mockData = Array.from({ length: 50 }).map((_, i) => {
-      const time = Math.floor(now / 1000) - (50 - i) * 3600;
-      const base = 65000 + Math.random() * 1000;
-      return {
-        time,
-        open: base,
-        high: base + 200,
-        low: base - 200,
-        close: base + 50,
-        volume: 100 + Math.random() * 50
-      };
+    console.error('[API Klines] Error:', error);
+    return apiResponse({
+      data: getMockCandles(symbol, interval),
+      isMock: true,
+      isStale: false,
+      reason: 'internal_error'
     });
-
-    return apiResponse(mockData);
   }
 }

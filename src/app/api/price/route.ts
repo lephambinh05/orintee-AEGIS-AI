@@ -1,35 +1,40 @@
 import { NextRequest } from 'next/server';
+import { apiResponse, errorResponse } from '@/lib/utils';
+import { daaFetch, DaaAuthError, DaaRateLimitError, DaaServerError } from '@/lib/daaClient';
+import { getMockTicker } from '@/constants/mockData';
 import connectDB from '@/lib/mongodb';
 import PriceCache from '@/models/PriceCache';
-import { apiResponse, errorResponse } from '@/lib/utils';
-import axios from 'axios';
+import { IDaaTicker } from '@/types';
+import { toDaaSymbol, isValidSymbol } from '@/lib/symbolUtils';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const symbol = searchParams.get('symbol')?.toUpperCase() || 'BTCUSDT';
+  const rawSymbol = searchParams.get('symbol') || '';
+  const symbol = toDaaSymbol(rawSymbol);
+
+  if (!isValidSymbol(symbol)) {
+    return errorResponse('Invalid symbol. Use: btcusdt, ethusdt, or solusdt', 'INVALID_SYMBOL', 400);
+  }
 
   try {
     await connectDB();
 
-    // 1. Try fetching from Binance
     try {
-      const response = await axios.get(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`, {
-        timeout: 5000 
-      });
-      const data = response.data;
-
+      // 1. Fetch from DAA
+      const data = await daaFetch<IDaaTicker>(`/public/trade-spot/ticker/24h?symbol=${symbol}`);
+      
       const result = {
-        symbol: data.symbol,
+        symbol: data.symbol.toLowerCase(),
         price: parseFloat(data.lastPrice),
         change24h: parseFloat(data.priceChangePercent),
-        high: parseFloat(data.highPrice),
-        low: parseFloat(data.lowPrice),
+        high: parseFloat(data.high24h),
+        low: parseFloat(data.low24h),
         isMock: false
       };
 
       // 2. Cache result in MongoDB (upsert)
       await PriceCache.findOneAndUpdate(
-        { symbol },
+        { symbol: symbol.toUpperCase() },
         { 
           price: result.price, 
           change24h: result.change24h,
@@ -39,42 +44,63 @@ export async function GET(request: NextRequest) {
       );
 
       return apiResponse(result);
-    } catch (binanceError) {
-      console.error('[API Price] Binance fetch failed:', (binanceError as Error).message);
 
-      // 3. Fallback: Try last cached price from MongoDB
-      const cached = await PriceCache.findOne({ symbol });
-      if (cached) {
+    } catch (apiError) {
+      // 3. Handle specific DAA errors
+      if (apiError instanceof DaaAuthError) {
+        const mock = getMockTicker(symbol);
         return apiResponse({
-          symbol,
-          price: cached.price,
-          change24h: cached.change24h,
-          high: 0, 
-          low: 0,
-          isMock: false,
-          isCached: true
+          symbol: mock.symbol,
+          price: parseFloat(mock.lastPrice),
+          change24h: parseFloat(mock.priceChangePercent),
+          high: parseFloat(mock.high24h),
+          low: parseFloat(mock.low24h),
+          isMock: true,
+          reason: 'auth_error'
         });
       }
 
-      // 4. Fallback: Return mock data if no cache exists
-      return apiResponse({
-        symbol,
-        price: 65000.00,
-        change24h: 2.5,
-        high: 66000.00,
-        low: 64000.00,
-        isMock: true
-      });
+      if (apiError instanceof DaaRateLimitError || apiError instanceof DaaServerError) {
+        // Try fallback to cache (Layer 2)
+        const cached = await PriceCache.findOne({ symbol: symbol.toUpperCase() });
+        if (cached) {
+          return apiResponse({
+            symbol,
+            price: cached.price,
+            change24h: cached.change24h,
+            high: 0, 
+            low: 0,
+            isMock: false,
+            isStale: true
+          });
+        }
+
+        // Fallback to mock if no cache (Layer 3)
+        const mock = getMockTicker(symbol);
+        return apiResponse({
+          symbol: mock.symbol,
+          price: parseFloat(mock.lastPrice),
+          change24h: parseFloat(mock.priceChangePercent),
+          high: parseFloat(mock.high24h),
+          low: parseFloat(mock.low24h),
+          isMock: true,
+          reason: 'rate_limit'
+        });
+      }
+
+      throw apiError; 
     }
   } catch (error) {
-    console.error('[API Price] Critical failure:', error);
-    // Never return 500, always return mock data or meaningful error
+    console.error('[API Ticker] Fatal Error:', error);
+    const mock = getMockTicker(symbol);
     return apiResponse({
-      symbol,
-      price: 0,
-      change24h: 0,
+      symbol: mock.symbol,
+      price: parseFloat(mock.lastPrice),
+      change24h: parseFloat(mock.priceChangePercent),
+      high: parseFloat(mock.high24h),
+      low: parseFloat(mock.low24h),
       isMock: true,
-      error: 'Service temporarily unavailable'
+      reason: 'rate_limit'
     });
   }
 }

@@ -15,12 +15,14 @@ export async function POST(request: NextRequest) {
     // 1. Fetch Market Data (Klines and Price)
     // We use internal API calls for consistency
     const [klinesRes, priceRes] = await Promise.all([
-      fetch(`${baseUrl}/api/klines?symbol=${symbol}&interval=1h&limit=100`),
+      fetch(`${baseUrl}/api/klines?symbol=${symbol}&interval=1h`),
       fetch(`${baseUrl}/api/price?symbol=${symbol}`)
     ]);
 
-    const klines = await klinesRes.json();
+    const klinesData = await klinesRes.json();
     const priceData = await priceRes.json();
+
+    const klines = klinesData.data;
 
     if (!Array.isArray(klines) || klines.length < 50) {
       return errorResponse('Insufficient data for analysis', 'INSUFFICIENT_DATA', 422);

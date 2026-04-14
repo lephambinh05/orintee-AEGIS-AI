@@ -1,0 +1,115 @@
+TÀI LIỆU TÍCH HỢP DAA PUBLIC API - DỰ
+ÁN AEGIS AI
+1. KIẾN TRÚC & BẢO MẬT (ARCHITECTURE &
+SECURITY)
+● Base URL: https://api.daathena.com/api/v2
+● Định dạng dữ liệu: application/json
+● Bảo mật API Key (quan trọng): KHÔNG gọi trực tiếp DAA API từ Client-side (Trình duyệt)
+để tránh lộ API Key qua Network Tab và lỗi CORS.
+○ Giải pháp (Next.js): Lưu API Key vào biến môi trường Server (DAA_API_KEY). Xây
+dựng Next.js API Routes (VD: /api/market/ticker) làm Proxy. Client sẽ gọi Next.js API,
+Next.js API đính kèm Key và gọi sang DAA.
+2. TYPESCRIPT INTERFACES (DATA MODELS)
+copy các Type này vào thư mục @/types hoặc @/interfaces để strict type cho UI:
+// 1. Model cho dữ liệu Ticker 24h
+export interface IDaaTicker {
+symbol: string; // VD: "btcusdt"
+lastPrice: string; // Giá hiện tại (VD: "65000.50")
+priceChange: string; // Biến động giá (VD: "+1200")
+priceChangePercent: string; // % Biến động (VD: "+1.5%")
+high24h: string; // Đỉnh 24h
+low24h: string; // Đáy 24h
+volume: string; // Khối lượng giao dịch
+}
+// 2. Model cho dữ liệu 1 cây Nến (Candle)
+export interface IDaaCandle {
+openTime: number; // Timestamp bắt đầu nến
+open: string; // Giá mở cửa
+high: string; // Giá cao nhất
+low: string; // Giá thấp nhất
+close: string; // Giá đóng cửa
+volume: string; // Khối lượng
+closeTime: number; // Timestamp đóng nến
+}
+3. DANH SÁCH ENDPOINTS CHI TIẾT
+3.1. API Lấy giá Real-time & Biến động 24h (Spot Ticker 24h)
+● Mục đích: Đổ dữ liệu vào Top Bar.
+● Method: GET
+● Endpoint (Gọi từ DAA): /public/trade-spot/ticker/24h
+● Headers Bắt buộc: Authorization: <DAA_API_KEY>
+● Query Parameters:
+○ symbol (String - Required): btcusdt, ethusdt, solusdt. (Chữ thường)
+● Trigger Logic: * Gọi khi Component Mount (Dùng SWR hoặc React Query là tốt nhất).
+○ Polling Interval: 5000ms (5 giây).
+● Response Payload Mẫu (Expected):
+{
+"code": 200,
+"msg": "success",
+"data": {
+"symbol": "btcusdt",
+"lastPrice": "64520.10",
+"priceChangePercent": "2.34",
+"high24h": "65100.00",
+"low24h": "63200.00"
+}
+}
+3.2. API Lấy dữ liệu Nến Nhật (Spot Candle / OHLC)
+● Mục đích: Feed data cho TradingView Lightweight Charts.
+● Method: GET
+● Endpoint (Gọi từ DAA): /public/trade-spot/candle
+● Headers Bắt buộc: Authorization: <DAA_API_KEY>
+● Query Parameters:
+○ symbol (String - Required): VD: btcusdt.
+○ interval (String - Required): 1h, 4h, 1d.
+● Trigger Logic: * Phụ thuộc vào [symbol, interval]. Gọi lại khi 1 trong 2 biến này thay đổi.
+● Response Payload Mẫu (Expected - Array of arrays hoặc Array of objects):
+{
+"code": 200,
+"data": [
+{
+"openTime": 1715616000000,
+"open": "64000.00",
+"high": "64500.00",
+"low": "63900.00",
+"close": "64450.00",
+"volume": "124.5"
+}
+]
+}
+(Lưu ý: log response thực tế để map trường time, open, high, low, close cho chuẩn với
+format của thư viện TradingView).
+4. NEXT.JS PROXY CODE MẪU (BẢO MẬT API KEY)
+set up file Route handler này để hứng request từ UI, giấu API Key ở Backend.
+Tạo file: app/api/market/ticker/route.ts (Next.js 13+ App Router)
+import { NextResponse } from 'next/server';
+const DAA_BASE_URL = '[https://api.daathena.com/api/v2](https://api.daathena.com/api/v2)';
+export async function GET(request: Request) {
+const { searchParams } = new URL(request.url);
+const symbol = searchParams.get('symbol') || 'btcusdt';
+try {
+const response = await
+fetch(`${DAA_BASE_URL}/public/trade-spot/ticker/24h?symbol=${symbol}`, {
+headers: {
+'Content-Type': 'application/json',
+'Authorization': process.env.DAA_API_KEY as string // Lấy từ biến môi trường Server
+},
+next: { revalidate: 5 } // Next.js Cache Revalidation (5 giây)
+});
+if (!response.ok) throw new Error(`DAA API Error: ${response.status}`);
+const data = await response.json();
+return NextResponse.json(data);
+} catch (error) {
+return NextResponse.json({ error: 'Failed to fetch market data' }, { status: 500 });
+}
+}
+Dưới Client (UI), gọi: fetch('/api/market/ticker?symbol=btcusdt') là xong
+5. CƠ CHẾ FALLBACK VÀ LỖI (ERROR HANDLING)
+Mọi try/catch cần tuân thủ:
+1. HTTP 401 (Lỗi API Key):
+○ UI kích hoạt SIMULATION_MODE = true.
+○ Trả về dữ liệu Mock tĩnh lưu sẵn trong file constants/mockData.ts.
+○ Render Toast màu cam: "⚠ Đang dùng Mock Data (Lỗi Xác thực DAA)".
+2. HTTP 429 (Rate Limit) / 5xx (Server Error):
+○ Tạm ngưng Polling (clearInterval).
+○ UI giữ nguyên trạng thái biểu đồ/giá cuối cùng.
+○ Render Toast loading: "Đang gián đoạn mạng, thử kết nối lại..."

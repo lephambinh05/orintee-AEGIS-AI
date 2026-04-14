@@ -11,6 +11,8 @@ services:
     environment:
       - MONGODB_URI=mongodb://aegis:aegis123@mongo:27017/aegisdb?authSource=admin
       - NODE_ENV=production
+      - DAA_API_KEY=${DAA_API_KEY}
+      - DAA_BASE_URL=https://api.daathena.com/api/v2
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
       interval: 30s

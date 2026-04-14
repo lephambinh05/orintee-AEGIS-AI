@@ -57,3 +57,24 @@ export interface AnalyzeResponse {
   riskLevel: 'Low' | 'Medium' | 'High';
   timestamp: number;
 }
+// --- DAA API Types ---
+
+export interface IDaaTicker {
+  symbol: string;
+  lastPrice: string;
+  priceChange: string;
+  priceChangePercent: string;
+  high24h: string;
+  low24h: string;
+  volume: string;
+}
+
+export interface IDaaCandle {
+  openTime: number;
+  open: string;
+  high: string;
+  low: string;
+  close: string;
+  volume: string;
+  closeTime: number;
+}

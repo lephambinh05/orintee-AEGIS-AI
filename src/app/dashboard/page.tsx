@@ -17,7 +17,7 @@ import { GlobalNav } from '@/components/shared/GlobalNav';
 import { DashboardSkeleton } from '@/components/shared/Skeleton';
 
 export default function Dashboard() {
-  const { address, isConnected, isCorrectChain, switchToBaseSepolia, executeStrategy, isProcessing } = useMetamask();
+  const { address, isConnected, isCorrectChain, switchToTargetChain, executeStrategy, isProcessing, CHAIN_NAME } = useMetamask();
   const { selectedAsset } = useAegisStore();
   const [timeframe, setTimeframe] = useState('1h');
   const [isSuccess, setIsSuccess] = useState(false);
@@ -48,7 +48,7 @@ export default function Dashboard() {
     
     if (!isCorrectChain) {
       toast.warning("Sai mạng", { description: "Đang yêu cầu chuyển mạng..." });
-      await switchToBaseSepolia();
+      await switchToTargetChain();
       return;
     }
 
@@ -58,8 +58,17 @@ export default function Dashboard() {
     }
     
     try {
+      const coinPair = selectedAsset.replace('USDT', '/USDT');
+
       // 1. Execute on Smart Contract
-      const txHash = await executeStrategy();
+      const txHash = await executeStrategy({
+        coinPair,
+        entryPrice: analysis.riskGuard.entryPrice,
+        stopLoss: analysis.riskGuard.stopLoss,
+        takeProfit: analysis.riskGuard.takeProfit,
+        aegisScore: analysis.aegisScore,
+        isLong: analysis.isLong
+      });
       
       if (!txHash) return; // Error already handled in useMetamask
       
@@ -67,7 +76,7 @@ export default function Dashboard() {
       saveStrategyMutation.mutate({
         walletAddress: address,
         txHash,
-        coinPair: selectedAsset,
+        coinPair,
         aegisScore: analysis.aegisScore,
         entryPrice: analysis.riskGuard.entryPrice,
         stopLoss: analysis.riskGuard.stopLoss,
@@ -144,7 +153,7 @@ export default function Dashboard() {
               )}
             </button>
             <p className="text-[12px] text-text-muted text-center">
-              {!isConnected ? "Vui lòng kết nối ví" : !isCorrectChain ? "Chuyển sang Base Sepolia" : "Giao dịch sẽ được ghi lên Base Sepolia"}
+              {!isConnected ? "Vui lòng kết nối ví" : !isCorrectChain ? `Chuyển sang ${useMetamask().CHAIN_NAME}` : `Giao dịch sẽ được ghi lên ${useMetamask().CHAIN_NAME}`}
             </p>
           </div>
         </div>

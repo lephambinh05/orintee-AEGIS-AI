@@ -2,25 +2,6 @@ import { NextRequest } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Strategy from '@/models/Strategy';
 import { apiResponse, errorResponse } from '@/lib/utils';
-import { z } from 'zod';
-
-// Validation Schema for POST
-const CreateStrategySchema = z.object({
-  walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid wallet address'),
-  txHash: z.string().startsWith('0x'),
-  coinPair: z.enum(['BTC/USDT', 'ETH/USDT', 'SOL/USDT']),
-  aegisScore: z.number().int().min(0).max(100),
-  entryPrice: z.number().positive(),
-  stopLoss: z.number().positive(),
-  takeProfit: z.number().positive(),
-  isLong: z.boolean()
-}).refine(data => data.isLong ? data.takeProfit > data.entryPrice : data.takeProfit < data.entryPrice, {
-  message: "Take profit must be higher than entry for Long, lower for Short",
-  path: ['takeProfit']
-}).refine(data => data.isLong ? data.stopLoss < data.entryPrice : data.stopLoss > data.entryPrice, {
-  message: "Stop loss must be lower than entry for Long, higher for Short",
-  path: ['stopLoss']
-});
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -30,7 +11,7 @@ export async function GET(request: NextRequest) {
 
   // 1. Validate wallet address
   if (!wallet || !/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
-    return errorResponse('Invalid or missing wallet address', 'INVALID_WALLET', 400);
+    return errorResponse('Invalid wallet address format (0x + 40 hex chars)', 'INVALID_WALLET', 400);
   }
 
   try {
@@ -60,29 +41,32 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const { 
+      walletAddress, txHash, coinPair, aegisScore: rawScore, 
+      entryPrice, stopLoss, takeProfit, isLong 
+    } = body;
 
-    // 1. Validate inputs
-    const validated = CreateStrategySchema.safeParse(body);
-    if (!validated.success) {
-      const error = validated.error.issues[0];
-      return Response.json({ 
-        error: error.message, 
-        code: 'VALIDATION_ERROR',
-        field: error.path[0] 
-      }, { 
-        status: 400, 
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        } 
-      });
+    // 1. Validations
+    if (!walletAddress || !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+      return errorResponse('Invalid wallet address', 'INVALID_WALLET', 400);
+    }
+    if (!txHash || !/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
+      return errorResponse('Invalid txHash (0x + 64 hex chars)', 'INVALID_TX', 400);
+    }
+    if (!['BTC/USDT', 'ETH/USDT', 'SOL/USDT'].includes(coinPair)) {
+      return errorResponse('Invalid coinPair', 'INVALID_COINPAIR', 400);
     }
 
-    const { 
-      walletAddress, txHash, coinPair, aegisScore, 
-      entryPrice, stopLoss, takeProfit, isLong 
-    } = validated.data;
+    // Aegis Score: integer 0-100 (Math.round + clamp)
+    const aegisScore = Math.min(Math.max(Math.round(rawScore || 0), 0), 100);
+
+    // StopLoss and TakeProfit validation (strict per user request)
+    if (stopLoss >= entryPrice) {
+      return errorResponse('stopLoss must be less than entryPrice', 'INVALID_STOPLOSS', 400);
+    }
+    if (takeProfit <= entryPrice) {
+      return errorResponse('takeProfit must be greater than entryPrice', 'INVALID_TAKEPROFIT', 400);
+    }
 
     await connectDB();
 
@@ -96,16 +80,15 @@ export async function POST(request: NextRequest) {
       stopLoss,
       takeProfit,
       isLong,
-      position: isLong ? 'Long' : 'Short',
-      status: Math.random() > 0.5 ? 'win' : 'loss'
+      status: Math.random() > 0.5 ? 'win' : 'loss' // Keeping existing random status
     });
 
     // 3. Save with unique txHash handling
     try {
       const saved = await strategy.save();
       return apiResponse(saved, 201);
-    } catch (dbError: unknown) {
-      if (dbError && typeof dbError === 'object' && 'code' in dbError && dbError.code === 11000) {
+    } catch (dbError: any) {
+      if (dbError && dbError.code === 11000) {
         return errorResponse('Duplicate txHash', 'DUPLICATE_TX', 409);
       }
       throw dbError;
