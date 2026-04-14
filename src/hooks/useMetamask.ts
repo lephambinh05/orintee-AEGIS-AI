@@ -157,14 +157,17 @@ export function useMetamask() {
     } catch (error: any) {
       console.error("Execution failed:", error);
       
-      if (error.message?.includes("User rejected")) {
-        toast.error("Bạn đã từ chối giao dịch");
-      } else if (error.message?.includes("insufficient funds")) {
-        toast.error("Không đủ Gas", { 
-          description: `Vui lòng nhận thêm ${SYMBOL} trên ${CHAIN_NAME} Faucet.`,
+      if (error.message?.toLowerCase().includes("user rejected")) {
+        toast.error("Giao dịch bị từ chối", { description: "Người dùng đã hủy yêu cầu ký trên ví." });
+      } else if (error.message?.toLowerCase().includes("insufficient funds") || error.name === 'InsufficientFundsError') {
+        toast.error("Insufficient funds for gas", { 
+          description: `Tài khoản của bạn không đủ ${SYMBOL} để trả phí giao dịch trên ${CHAIN_NAME}. Vui lòng nhận thêm từ Faucet.`,
+          duration: 6000
         });
       } else {
-        toast.error("Giao dịch thất bại", { description: error.shortMessage || error.message });
+        toast.error("Giao dịch thất bại", { 
+          description: error.shortMessage || "Đã xảy ra lỗi không xác định. Vui lòng thử lại." 
+        });
       }
       return null;
     } finally {

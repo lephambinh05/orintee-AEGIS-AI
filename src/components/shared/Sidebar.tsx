@@ -16,8 +16,8 @@ export function Sidebar() {
   ];
 
   const bottomItems = [
-    { icon: Settings, label: 'Settings', href: '#' },
-    { icon: HelpCircle, label: 'Help', href: '#' },
+    { icon: Settings, label: 'Settings (Coming soon)', href: '#' },
+    { icon: HelpCircle, label: 'Help (Coming soon)', href: '#' },
   ];
 
   return (

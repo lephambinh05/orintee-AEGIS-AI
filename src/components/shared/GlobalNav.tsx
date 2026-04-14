@@ -3,13 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, History, ExternalLink } from 'lucide-react';
+import { LayoutDashboard, History, ExternalLink, LogOut } from 'lucide-react';
 import { useMetamask } from '@/hooks/useMetamask';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 export function GlobalNav() {
   const pathname = usePathname();
-  const { switchToTargetChain, isProcessing } = useMetamask();
+  const { switchToTargetChain, isProcessing, disconnect } = useMetamask();
 
   const navItems = [
     { 
@@ -157,6 +157,15 @@ export function GlobalNav() {
                         {account.displayBalance
                           ? ` (${account.displayBalance})`
                           : ''}
+                      </button>
+
+                      <button
+                        onClick={disconnect}
+                        type="button"
+                        className="p-2 text-text-muted hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                        title="Disconnect Wallet"
+                      >
+                        <LogOut size={16} />
                       </button>
                     </div>
                   );

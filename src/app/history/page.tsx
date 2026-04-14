@@ -63,7 +63,7 @@ export default function HistoryPage() {
                 </thead>
                 <tbody className="divide-y divide-[#f5f5f5]">
                   {history.map((record: any) => (
-                    <tr key={record._id} className="hover:bg-bg-secondary transition-colors transition-duration-150">
+                    <tr key={record._id} className="hover:bg-bg-secondary transition-colors duration-150">
                       <td className="p-4 text-[13px] text-text-secondary">
                         {new Date(record.createdAt).toLocaleString('vi-VN', {
                           day: '2-digit',

@@ -36,8 +36,8 @@ export const useAegisStore = create<WalletState>()(
       setSelectedAsset: (asset) => set({ selectedAsset: asset }),
     }),
     {
-      name: 'aegis-session-storage',
-      storage: createJSONStorage(() => sessionStorage), // Persist to sessionStorage (clears on tab close)
+      name: 'aegis-app-storage',
+      storage: createJSONStorage(() => localStorage),
     }
   )
 );

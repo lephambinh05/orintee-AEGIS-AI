@@ -1,6 +1,6 @@
 # Aegis AI Platform
 
-A high-fidelity crypto analysis and strategy execution platform built with Next.js 14, MongoDB, and Base Sepolia.
+A high-fidelity crypto analysis and strategy execution platform built with Next.js 16, MongoDB, and Base Sepolia.
 
 ## 🚀 Quick Start
 
@@ -25,10 +25,10 @@ docker compose up --build -d
 The application will be available at [http://localhost](http://localhost).
 
 ## 🛠️ Tech Stack
-- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS, Framer Motion.
+- **Frontend**: Next.js 16 (App Router), TypeScript, Tailwind CSS, Framer Motion.
 - **Backend API**: Next.js API Routes, Mongoose, Zod.
 - **Infrastructure**: MongoDB 7, Nginx (Reverse Proxy), Node.js 20 Alpine.
-- **Web3**: ethers.js, MetaMask, Base Sepolia Testnet.
+- **Web3**: Wagmi, Viem, RainbowKit, Base Sepolia Testnet.
 
 ## 🧪 Testing
 To run the end-to-end verification suite:
@@ -45,7 +45,7 @@ Aegis AI is built to handle multiple concurrent users with production-grade stab
 
 ### 1. Wallet-Based Isolation
 Identity is managed entirely via the user's wallet address.
-- **Frontend Isolation**: User sessions are brower-isolated via `sessionStorage`.
+- **Frontend Isolation**: User sessions are browser-isolated via `localStorage`.
 - **Backend Isolation**: API responses are strictly filtered by the connected wallet address.
 
 ### 2. Infrastructure Protection
