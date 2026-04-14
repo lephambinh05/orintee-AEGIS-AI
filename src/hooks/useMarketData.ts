@@ -44,16 +44,15 @@ export function usePriceQuery(symbol: string): UseQueryResult<MarketTickerRespon
     if (!data) return;
 
     if (data.isMock) {
+      toast.info('Using simulated data', {
+        id: 'mock-data-notice',
+        description: 'DAA API is currently unavailable or unauthorized.',
+        duration: 3000
+      });
+
       if (data.reason === 'auth_error') {
-        toast.error('⚠ Đang dùng Mock Data (Lỗi Xác thực DAA)', {
-          id: 'daa-auth-error',
-          description: 'Vui lòng kiểm tra DAA_API_KEY. Dừng polling.'
-        });
         setPollingInterval(null);
       } else if (data.reason === 'rate_limit') {
-        toast.warning('Đang gián đoạn mạng, thử kết nối lại...', {
-          id: 'daa-rate-limit'
-        });
         setPollingInterval(null);
       }
     } else if (data.isStale) {
@@ -82,7 +81,8 @@ export function useKlinesQuery(symbol: string, interval: string) {
 
   return {
     ...query,
-    data: query.data?.data || []
+    data: query.data?.data || [],
+    isMock: query.data?.isMock || false
   };
 }
 
