@@ -5,10 +5,11 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, History, ExternalLink } from 'lucide-react';
 import { useMetamask } from '@/hooks/useMetamask';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 export function GlobalNav() {
   const pathname = usePathname();
-  const { address, isConnected, connect, switchToBaseSepolia, isCorrectChain, isProcessing } = useMetamask();
+  const { switchToTargetChain, isProcessing } = useMetamask();
 
   const navItems = [
     { 
@@ -61,35 +62,111 @@ export function GlobalNav() {
         ))}
       </div>
 
-      {/* Right Side */}
+      {/* Right Side - RainbowKit Connect Button */}
       <div className="ml-auto flex items-center gap-4">
-        {!isConnected ? (
-          <button 
-            onClick={connect} 
-            disabled={isProcessing}
-            className="btn-secondary !py-1.5 !px-3 text-[13px] font-semibold border-green-primary/20 hover:border-green-primary"
-          >
-            {isProcessing ? "Connecting..." : "Connect Wallet"}
-          </button>
-        ) : (
-          <div className="flex items-center gap-3">
-            {!isCorrectChain && (
-              <button
-                onClick={switchToBaseSepolia}
-                className="px-3 py-1.5 bg-red-500 text-white rounded-md text-[13px] font-semibold animate-pulse"
+        <ConnectButton.Custom>
+          {({
+            account,
+            chain,
+            openAccountModal,
+            openChainModal,
+            openConnectModal,
+            authenticationStatus,
+            mounted,
+          }) => {
+            const ready = mounted && authenticationStatus !== 'loading';
+            const connected =
+              ready &&
+              account &&
+              chain &&
+              (!authenticationStatus || authenticationStatus === 'authenticated');
+
+            return (
+              <div
+                {...(!ready && {
+                  'aria-hidden': true,
+                  'style': {
+                    opacity: 0,
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                  },
+                })}
               >
-                Wrong Network
-              </button>
-            )}
-            <button 
-              className="btn-secondary !py-1.5 !px-3 text-[13px] font-semibold flex items-center gap-2"
-            >
-              <div className="w-2 h-2 rounded-full bg-green-primary" />
-              {address?.slice(0, 6)}...{address?.slice(-4)}
-            </button>
-          </div>
-        )}
+                {(() => {
+                  if (!connected) {
+                    return (
+                      <button 
+                        onClick={openConnectModal}
+                        type="button"
+                        className="btn-secondary !py-1.5 !px-3 text-[13px] font-semibold border-green-primary/20 hover:border-green-primary"
+                      >
+                        Connect Wallet
+                      </button>
+                    );
+                  }
+
+                  if (chain.unsupported) {
+                    return (
+                      <button 
+                        onClick={openChainModal}
+                        type="button"
+                        className="px-3 py-1.5 bg-red-500 text-white rounded-md text-[13px] font-semibold animate-pulse"
+                      >
+                        Wrong Network
+                      </button>
+                    );
+                  }
+
+                  return (
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={openChainModal}
+                        type="button"
+                        className="btn-secondary !py-1.5 !px-3 text-[13px] font-semibold flex items-center gap-2"
+                      >
+                        {chain.hasIcon && (
+                          <div
+                            style={{
+                              background: chain.iconBackground,
+                              width: 12,
+                              height: 12,
+                              borderRadius: 999,
+                              overflow: 'hidden',
+                              marginRight: 4,
+                            }}
+                          >
+                            {chain.iconUrl && (
+                              <img
+                                alt={chain.name ?? 'Chain icon'}
+                                src={chain.iconUrl}
+                                style={{ width: 12, height: 12 }}
+                              />
+                            )}
+                          </div>
+                        )}
+                        {chain.name}
+                      </button>
+
+                      <button 
+                        onClick={openAccountModal} 
+                        type="button"
+                        className="btn-secondary !py-1.5 !px-3 text-[13px] font-semibold flex items-center gap-2"
+                      >
+                        <div className="w-2 h-2 rounded-full bg-green-primary" />
+                        {account.displayName}
+                        {account.displayBalance
+                          ? ` (${account.displayBalance})`
+                          : ''}
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
+            );
+          }}
+        </ConnectButton.Custom>
       </div>
     </nav>
   );
 }
+

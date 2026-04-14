@@ -16,12 +16,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
-      <body className="min-h-full flex overflow-hidden">
+    <html lang="en">
+      <body className="min-h-screen flex flex-col bg-bg-primary overflow-hidden">
         <Web3Provider>
-          <Sidebar />
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-            {children}
+          <div className="flex flex-1 min-h-0 overflow-hidden">
+            <Sidebar />
+            <main className="flex-1 flex flex-col min-w-0 relative overflow-y-auto custom-scrollbar">
+              {children}
+            </main>
           </div>
         </Web3Provider>
         <Toaster richColors position="bottom-right" />

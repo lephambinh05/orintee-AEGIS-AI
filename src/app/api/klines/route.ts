@@ -27,6 +27,17 @@ export async function GET(request: NextRequest) {
   const cacheKey = `${symbol}-${interval}`;
   const now = Date.now();
 
+  // Helper for consistent transformation
+  const transformCandles = (candles: IDaaCandle[]) => {
+    return candles.map((k: IDaaCandle) => ({
+      time: Math.floor(k.openTime / 1000), // ms to seconds
+      open: parseFloat(k.open),
+      high: parseFloat(k.high),
+      low: parseFloat(k.low),
+      close: parseFloat(k.close)
+    }));
+  };
+
   try {
     // 1. Check in-memory cache
     const cached = klineCache.get(cacheKey);
@@ -42,17 +53,8 @@ export async function GET(request: NextRequest) {
       // 2. Fetch from DAA
       const data = await daaFetch<IDaaCandle[]>(`/public/trade-spot/candle?symbol=${symbol}&interval=${interval}`);
       
-      console.log(`[DAA Klines] Raw response for ${symbol}:`, data.slice(0, 2));
-
       // 3. Transform response: time must be in SECONDS
-      const transformed = data.map((k: IDaaCandle) => ({
-        time: Math.floor(k.openTime / 1000), // ms to seconds
-        open: parseFloat(k.open),
-        high: parseFloat(k.high),
-        low: parseFloat(k.low),
-        close: parseFloat(k.close),
-        volume: parseFloat(k.volume)
-      }));
+      const transformed = transformCandles(data);
 
       // 4. Update memory cache
       klineCache.set(cacheKey, { data: transformed, timestamp: now });
@@ -66,7 +68,7 @@ export async function GET(request: NextRequest) {
     } catch (apiError) {
       if (apiError instanceof DaaAuthError) {
         return apiResponse({
-          data: getMockCandles(symbol, interval),
+          data: transformCandles(getMockCandles(symbol, interval)),
           isMock: true,
           isStale: false,
           reason: 'auth_error'
@@ -84,7 +86,7 @@ export async function GET(request: NextRequest) {
 
       // Fallback to mock (Layer 3)
       return apiResponse({
-        data: getMockCandles(symbol, interval),
+        data: transformCandles(getMockCandles(symbol, interval)),
         isMock: true,
         isStale: false,
         reason: 'rate_limit'
@@ -93,7 +95,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('[API Klines] Error:', error);
     return apiResponse({
-      data: getMockCandles(symbol, interval),
+      data: transformCandles(getMockCandles(symbol, interval)),
       isMock: true,
       isStale: false,
       reason: 'internal_error'

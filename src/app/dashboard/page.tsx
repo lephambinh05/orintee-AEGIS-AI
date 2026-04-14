@@ -153,7 +153,7 @@ export default function Dashboard() {
               )}
             </button>
             <p className="text-[12px] text-text-muted text-center">
-              {!isConnected ? "Vui lòng kết nối ví" : !isCorrectChain ? `Chuyển sang ${useMetamask().CHAIN_NAME}` : `Giao dịch sẽ được ghi lên ${useMetamask().CHAIN_NAME}`}
+              {!isConnected ? "Vui lòng kết nối ví" : !isCorrectChain ? `Chuyển sang ${CHAIN_NAME}` : `Giao dịch sẽ được ghi lên ${CHAIN_NAME}`}
             </p>
           </div>
         </div>

@@ -4,122 +4,97 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAegisStore } from '@/store/useStore';
-import { ethers } from 'ethers';
+import { 
+  useAccount, 
+  useConnect, 
+  useDisconnect, 
+  useSwitchChain, 
+  useWriteContract,
+  useSignMessage
+} from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 
-const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID || '0x14a34';
+const CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || '84532');
 const CHAIN_NAME = process.env.NEXT_PUBLIC_CHAIN_NAME || 'Base Sepolia';
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://sepolia.base.org';
 const EXPLORER_URL = process.env.NEXT_PUBLIC_BLOCK_EXPLORER || 'https://sepolia.basescan.org';
 const SYMBOL = process.env.NEXT_PUBLIC_SYMBOL || 'ETH';
 
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '';
+const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '') as `0x${string}`;
 
 const STRATEGY_ABI = [
-  "function savePrediction(string _coinPair, uint256 _entryPrice, uint256 _stopLoss, uint256 _takeProfit, uint8 _aegisScore, bool _isLong) public returns (uint256)"
-];
+  {
+    "name": "savePrediction",
+    "type": "function",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "_coinPair", "type": "string" },
+      { "name": "_entryPrice", "type": "uint256" },
+      { "name": "_stopLoss", "type": "uint256" },
+      { "name": "_takeProfit", "type": "uint256" },
+      { "name": "_aegisScore", "type": "uint8" },
+      { "name": "_isLong", "type": "bool" }
+    ],
+    "outputs": [{ "type": "uint256" }]
+  }
+] as const;
 
 export function useMetamask() {
-  const { address, chainId, setWallet, clearWallet } = useAegisStore();
+  const { address: wagmiAddress, isConnected, chainId } = useAccount();
+  const { connect: connectWallet, connectors } = useConnect();
+  const { disconnect: disconnectWallet } = useDisconnect();
+  const { switchChain } = useSwitchChain();
+  const { writeContractAsync } = useWriteContract();
+  const { signMessageAsync } = useSignMessage();
+  const { openConnectModal } = useConnectModal();
+  
+  const { address, setWallet, clearWallet } = useAegisStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
 
-  const isConnected = !!address;
   const isCorrectChain = chainId === CHAIN_ID;
+
+  // Sync Wagmi state to AegisStore
+  useEffect(() => {
+    if (isConnected && wagmiAddress) {
+      setWallet(wagmiAddress.toLowerCase(), chainId?.toString() || null);
+    } else {
+      clearWallet();
+    }
+  }, [isConnected, wagmiAddress, chainId, setWallet, clearWallet]);
 
   // 1. Switch Network Logic
   const switchToTargetChain = useCallback(async () => {
-    const ethereum = (window as any).ethereum;
-    if (!ethereum) return;
-
     try {
-      await ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: CHAIN_ID }],
-      });
-    } catch (switchError: unknown) {
-      const error = switchError as { code: number };
-      if (error.code === 4902) {
-        try {
-          await ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: CHAIN_ID,
-                chainName: CHAIN_NAME,
-                nativeCurrency: { name: SYMBOL, symbol: SYMBOL, decimals: 18 },
-                rpcUrls: [RPC_URL],
-                blockExplorerUrls: [EXPLORER_URL],
-              },
-            ],
-          });
-        } catch (addError) {
-          console.error('Failed to add network', addError);
-          toast.error(`Không thể thêm mạng ${CHAIN_NAME}`);
-        }
-      } else if (error.code === 4001) {
-        toast.error("Bạn đã từ chối chuyển mạng");
-      } else {
-        toast.error("Vui lòng chuyển mạng để tiếp tục");
-      }
+      await switchChain({ chainId: CHAIN_ID });
+    } catch (error: any) {
+      console.error('Failed to switch network', error);
+      toast.error(`Vui lòng chuyển mạng sang ${CHAIN_NAME}`);
     }
-  }, []);
+  }, [switchChain]);
 
-  // 2. Disconnect Logic (T3.4)
+  // 2. Disconnect Logic
   const disconnect = useCallback(() => {
-    clearWallet();
+    disconnectWallet();
     toast.info("Wallet disconnected");
     router.push('/');
-  }, [clearWallet, router]);
+  }, [disconnectWallet, router]);
 
-  // 3. Connect Logic (T3.1, T3.3)
+  // 3. Connect Logic
   const connect = useCallback(async () => {
-    const ethereum = (window as any).ethereum;
-
-    if (typeof ethereum === 'undefined') {
-      toast.error("Vui lòng cài Metamask", {
-        description: "Metamask extension is required to use Aegis AI.",
-        action: {
-          label: "Cài đặt",
-          onClick: () => window.open('https://metamask.io/download/', '_blank')
-        }
-      });
-      return;
-    }
-
-    if (!ethereum.isMetaMask) {
-      toast.error("Vui lòng dùng Metamask", { description: "Please use the official Metamask wallet." });
-      return;
-    }
-
-    setIsProcessing(true);
-    try {
-      const accounts = await ethereum.request({ method: 'eth_requestAccounts' }) as string[];
-      const currentChainId = await ethereum.request({ method: 'eth_chainId' }) as string;
-      
-      const userAddress = accounts[0].toLowerCase();
-      setWallet(userAddress, currentChainId);
-
-      if (currentChainId !== CHAIN_ID) {
-        await switchToTargetChain();
+    if (openConnectModal) {
+      openConnectModal();
+    } else {
+      // Fallback if modal isn't ready
+      const metamaskConnector = connectors.find(c => c.name.toLowerCase().includes('metamask'));
+      if (metamaskConnector) {
+        connectWallet({ connector: metamaskConnector });
       }
-
-      toast.success("Kết nối thành công!");
-      router.push('/dashboard'); // T3.3 auto redirect
-    } catch (error: unknown) {
-      const err = error as { code: number; message: string };
-      if (err.code === 4001) {
-        toast.error("Từ chối kết nối", { description: "Bạn đã từ chối yêu cầu kết nối ví." });
-      } else if (err.code === -32002) {
-        toast.warning("Yêu cầu đang chờ", { description: "Vui lòng mở ví Metamask để hoàn tất kết nối." });
-      } else {
-        toast.error("Lỗi kết nối", { description: err.message });
-      }
-    } finally {
-      setIsProcessing(false);
     }
-  }, [setWallet, switchToBaseSepolia, router]);
+  }, [openConnectModal, connectors, connectWallet]);
 
-  // 4. Smart Contract Execution (T3.6) - Real Implementation with Demo Fallback
+  // 4. Smart Contract Execution
   const executeStrategy = useCallback(async (params: {
     coinPair: string;
     entryPrice: number;
@@ -128,24 +103,20 @@ export function useMetamask() {
     aegisScore: number;
     isLong: boolean;
   }) => {
-    const ethereum = (window as any).ethereum;
-    if (!ethereum || !address) return null;
+    if (!isConnected || !wagmiAddress) return null;
 
-    // Check for Demo Mode (if no contract address is set)
     const isDemoMode = !CONTRACT_ADDRESS || CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000';
 
     setIsProcessing(true);
     try {
-      const provider = new ethers.providers.Web3Provider(ethereum);
-      const signer = provider.getSigner();
-
       if (isDemoMode) {
         toast.warning(`Chế độ Demo: Đang giả lập giao dịch trên ${CHAIN_NAME}...`, {
           description: "Vui lòng ký xác nhận (không tốn phí Gas)."
         });
         
-        // Request a simple signature to make the demo feel real
-        await signer.signMessage(`Aegis AI Strategy: ${params.coinPair} @ ${params.entryPrice}`);
+        await signMessageAsync({ 
+          message: `Aegis AI Strategy: ${params.coinPair} @ ${params.entryPrice}` 
+        });
         
         toast.loading("Đang mô phỏng ghi dữ liệu...", { id: 'demo-loading' });
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -160,90 +131,58 @@ export function useMetamask() {
         return mockHash;
       }
       
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, STRATEGY_ABI, signer);
+      const scale = (val: number) => BigInt(Math.round(val * 1e8));
 
-      // Scaling prices by 10^8 per PRD (uint256)
-      const scale = (val: number) => ethers.BigNumber.from(Math.round(val * 1e8));
+      toast.info("Vui lòng xác nhận giao dịch trên ví...");
 
-      toast.info("Vui lòng xác nhận giao dịch trên ví Metamask...");
-
-      const tx = await contract.savePrediction(
-        params.coinPair,
-        scale(params.entryPrice),
-        scale(params.stopLoss),
-        scale(params.takeProfit),
-        Math.round(params.aegisScore),
-        params.isLong
-      );
-
-      toast.loading(`Đang ghi dữ liệu lên ${CHAIN_NAME}...`, {
-        description: "Vui lòng chờ giao dịch được xác nhận (Mined)."
+      const hash = await writeContractAsync({
+        address: CONTRACT_ADDRESS,
+        abi: STRATEGY_ABI,
+        functionName: 'savePrediction',
+        args: [
+          params.coinPair,
+          scale(params.entryPrice),
+          scale(params.stopLoss),
+          scale(params.takeProfit),
+          Math.round(params.aegisScore),
+          params.isLong
+        ],
       });
 
-      const receipt = await tx.wait();
-      
-      toast.success("Giao dịch thành công!", {
-        description: `Tx Hash: ${receipt.transactionHash.slice(0, 10)}...`
+      toast.success("Giao dịch đã gửi!", {
+        description: `Tx Hash: ${hash.slice(0, 10)}... Đang chờ xác nhận.`
       });
 
-      return receipt.transactionHash as string;
-    } catch (error: unknown) {
-      const err = error as { code: number; message: string };
-      console.error("Execution failed:", err);
+      return hash;
+    } catch (error: any) {
+      console.error("Execution failed:", error);
       
-      if (err.code === 4001) {
-        toast.error("Bạn đã từ chối giao dịch", { description: "Lệnh ký đã bị hủy trên ví." });
-      } else if (err.message?.includes("insufficient funds")) {
+      if (error.message?.includes("User rejected")) {
+        toast.error("Bạn đã từ chối giao dịch");
+      } else if (error.message?.includes("insufficient funds")) {
         toast.error("Không đủ Gas", { 
           description: `Vui lòng nhận thêm ${SYMBOL} trên ${CHAIN_NAME} Faucet.`,
-          action: {
-            label: "Faucet",
-            onClick: () => window.open(EXPLORER_URL, '_blank')
-          }
         });
       } else {
-        toast.error("Giao dịch thất bại", { description: err.message || "Vui lòng thử lại sau." });
+        toast.error("Giao dịch thất bại", { description: error.shortMessage || error.message });
       }
       return null;
     } finally {
       setIsProcessing(false);
     }
-  }, [address]);
+  }, [isConnected, wagmiAddress, writeContractAsync, signMessageAsync]);
 
-  // 5. Listeners
-  useEffect(() => {
-    const ethereum = (window as any).ethereum;
-    if (!ethereum) return;
-
-    const handleAccountsChanged = (accounts: string[]) => {
-      if (accounts.length === 0) {
-        disconnect();
-      } else {
-        setWallet(accounts[0].toLowerCase(), chainId);
-      }
-    };
-
-    const handleChainChanged = (newChainId: string) => {
-      setWallet(address, newChainId);
-      if (newChainId !== CHAIN_ID) {
-        toast.warning("Sai mạng kết nối", { description: `Vui lòng chuyển sang ${CHAIN_NAME} để tiếp tục.` });
-      }
-    };
-
-    ethereum.on('accountsChanged', handleAccountsChanged);
-    ethereum.on('chainChanged', handleChainChanged);
-
-    return () => {
-      ethereum.removeListener('accountsChanged', handleAccountsChanged);
-      ethereum.removeListener('chainChanged', handleChainChanged);
-    };
-  }, [address, chainId, setWallet, disconnect]);
-
-    connect,
-    disconnect,
+  return {
+    address,
+    isConnected,
+    isCorrectChain,
     switchToTargetChain,
     executeStrategy,
+    isProcessing,
     CHAIN_NAME,
+    connect,
+    disconnect,
     SYMBOL
   };
 }
+

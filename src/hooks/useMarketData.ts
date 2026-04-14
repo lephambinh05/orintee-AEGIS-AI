@@ -26,12 +26,12 @@ export interface MarketKlinesResponse {
 // 1. Current Price Query
 export function usePriceQuery(symbol: string): UseQueryResult<MarketTickerResponse, Error> {
   const [pollingInterval, setPollingInterval] = useState<number | null>(5000);
-  const toastIdRef = useRef<string | number | null>(null);
 
   const query = useQuery<MarketTickerResponse, Error>({
     queryKey: ['price', symbol],
     queryFn: async (): Promise<MarketTickerResponse> => {
       const { data } = await axios.get(`/api/price?symbol=${symbol}`);
+      // console.log(`[usePriceQuery] Refetched ${symbol}:`, data.price);
       return data;
     },
     refetchInterval: pollingInterval ?? undefined,
@@ -49,12 +49,12 @@ export function usePriceQuery(symbol: string): UseQueryResult<MarketTickerRespon
           id: 'daa-auth-error',
           description: 'Vui lòng kiểm tra DAA_API_KEY. Dừng polling.'
         });
-        setPollingInterval(null); // Pause Polling (clearInterval)
+        setPollingInterval(null);
       } else if (data.reason === 'rate_limit') {
         toast.warning('Đang gián đoạn mạng, thử kết nối lại...', {
           id: 'daa-rate-limit'
         });
-        setPollingInterval(null); // Tạm ngưng Polling (theo spec)
+        setPollingInterval(null);
       }
     } else if (data.isStale) {
       toast.info('Dữ liệu có thể chưa cập nhật', {
@@ -73,13 +73,13 @@ export function useKlinesQuery(symbol: string, interval: string) {
     queryKey: ['klines', symbol, interval],
     queryFn: async (): Promise<MarketKlinesResponse> => {
       const { data } = await axios.get(`/api/klines?symbol=${symbol}&interval=${interval}`);
+      // console.log(`[useKlinesQuery] Fetched ${symbol} chart:`, data.data?.length);
       return data;
     },
-    refetchInterval: 60000, // 60s
+    refetchInterval: 60000,
     enabled: !!symbol && !!interval
   });
 
-  // Extract the actual klines array for the chart
   return {
     ...query,
     data: query.data?.data || []
@@ -94,9 +94,9 @@ export function useAnalyzeQuery(symbol: string) {
       const { data } = await axios.post('/api/analyze', { symbol });
       return data;
     },
-    refetchInterval: 30000, // 30s
-    refetchOnWindowFocus: false, // Per requirement
+    refetchInterval: 30000,
+    refetchOnWindowFocus: false,
     enabled: !!symbol,
-    placeholderData: (previousData) => previousData // Keep stale data while refetching
+    placeholderData: (previousData) => previousData
   });
 }

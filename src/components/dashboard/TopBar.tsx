@@ -1,5 +1,4 @@
-'use client';
-
+import { useState, useEffect } from 'react';
 import { Badge } from '../shared/Badge';
 import { NewsTicker } from './NewsTicker';
 import { useAegisStore } from '@/store/useStore';
@@ -8,9 +7,14 @@ import { usePriceQuery } from '@/hooks/useMarketData';
 export function TopBar() {
   const { selectedAsset, setSelectedAsset } = useAegisStore();
   const { data: priceData } = usePriceQuery(selectedAsset);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
-    <div className="h-[56px] bg-white border-b border-border flex items-center px-6 gap-4">
+    <div className="h-[56px] bg-white border-b border-border flex items-center px-6 gap-4 w-full">
       <div className="flex items-center gap-3 min-w-[320px]">
         <select 
           className="select !h-8 !py-0 w-[140px] font-semibold"
@@ -24,9 +28,13 @@ export function TopBar() {
 
         <div className="flex items-center gap-2">
           <span className="text-[18px] font-bold text-text-primary">
-            ${priceData?.price?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '---'}
+            {mounted && priceData?.price ? (
+              `$${priceData.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+            ) : (
+              '$ ---'
+            )}
           </span>
-          {priceData?.change24h !== undefined && (
+          {mounted && priceData?.change24h !== undefined && (
             <Badge variant={priceData.change24h >= 0 ? 'success' : 'danger'}>
               {priceData.change24h >= 0 ? '+' : ''}{priceData.change24h}%
             </Badge>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, CandlestickSeries } from 'lightweight-charts';
 
 interface AegisChartProps {
@@ -12,9 +12,16 @@ interface AegisChartProps {
 
 export function AegisChart({ data, symbol, timeframe, onTimeframeChange }: AegisChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!chartContainerRef.current || data.length === 0) return;
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || !chartContainerRef.current || !data || data.length === 0) return;
+
+    // console.log(`[AegisChart] Initializing with ${data.length} candles`);
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
@@ -27,7 +34,7 @@ export function AegisChart({ data, symbol, timeframe, onTimeframeChange }: Aegis
         horzLines: { color: '#f5f5f5' },
       },
       width: chartContainerRef.current.clientWidth,
-      height: chartContainerRef.current.clientHeight,
+      height: chartContainerRef.current.clientHeight || 400,
       timeScale: {
         borderColor: '#e4e4e7',
       },
@@ -44,12 +51,17 @@ export function AegisChart({ data, symbol, timeframe, onTimeframeChange }: Aegis
       wickDownColor: '#dc2626',
     });
 
-    candlestickSeries.setData(data);
-
-    chart.timeScale().fitContent();
+    try {
+      candlestickSeries.setData(data);
+      chart.timeScale().fitContent();
+    } catch (e) {
+      console.error('[AegisChart] setData failed:', e);
+    }
 
     const handleResize = () => {
-      chart.applyOptions({ width: chartContainerRef.current!.clientWidth });
+      if (chartContainerRef.current) {
+        chart.applyOptions({ width: chartContainerRef.current.clientWidth });
+      }
     };
 
     window.addEventListener('resize', handleResize);
@@ -58,7 +70,7 @@ export function AegisChart({ data, symbol, timeframe, onTimeframeChange }: Aegis
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [data]);
+  }, [mounted, data]);
 
   return (
     <div className="w-full h-full flex flex-col">
