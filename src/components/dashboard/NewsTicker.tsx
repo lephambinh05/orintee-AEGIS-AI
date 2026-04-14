@@ -13,7 +13,7 @@ export function NewsTicker() {
     <div className="flex-1 overflow-hidden relative h-full flex items-center border-l border-r border-border px-4">
       <div className="whitespace-nowrap flex gap-12 animate-[marquee_30s_linear_infinite] hover:[animation-play-state:paused]">
         {NEWS.concat(NEWS).map((n, i) => (
-          <span key={i} className="text-[12px] color-text-secondary">
+          <span key={i} className="text-[12px] text-text-secondary">
             📰 {n}
           </span>
         ))}
