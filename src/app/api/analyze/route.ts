@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { apiResponse, errorResponse } from '@/lib/utils';
 import { calcRSI, calcATR, calcSentiment, calcScore } from '@/lib/indicators';
+import { getKlinesData, getPriceData } from '@/lib/binance';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,29 +11,21 @@ export async function POST(request: NextRequest) {
       return errorResponse('Symbol is required', 'MISSING_SYMBOL', 400);
     }
 
-    const baseUrl = new URL(request.url).origin;
-
-    // 1. Fetch Market Data (Klines and Price)
-    // We use internal API calls for consistency
-    const [klinesRes, priceRes] = await Promise.all([
-      fetch(`${baseUrl}/api/klines?symbol=${symbol}&interval=1h`),
-      fetch(`${baseUrl}/api/price?symbol=${symbol}`)
+    // 1. Fetch Market Data Directly (Avoid Self-fetching Deadlock)
+    const [klines, priceData] = await Promise.all([
+      getKlinesData(symbol, '1h', 100),
+      getPriceData(symbol)
     ]);
-
-    const klinesData = await klinesRes.json();
-    const priceData = await priceRes.json();
-
-    const klines = klinesData.data;
 
     if (!Array.isArray(klines) || klines.length < 50) {
       return errorResponse('Insufficient data for analysis', 'INSUFFICIENT_DATA', 422);
     }
 
-    const currentPrice = priceData.price;
+    const currentPrice = parseFloat(priceData.lastPrice);
 
     // 2. Extract Data for Indicators
-    const closes = klines.map((k: any) => k.close);
-    const candles = klines.map((k: any) => ({
+    const closes = klines.map((k) => k.close);
+    const candles = klines.map((k) => ({
       high: k.high,
       low: k.low,
       close: k.close

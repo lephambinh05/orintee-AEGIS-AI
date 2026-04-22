@@ -11,8 +11,12 @@ async function testSymbol(symbol: string) {
             timeout: 5000
         });
         console.log(`Result:`, JSON.stringify(res.data));
-    } catch (e: any) {
-        console.log(`Error:`, e.response?.data ? JSON.stringify(e.response.data) : e.message);
+    } catch (e) {
+        if (axios.isAxiosError(e)) {
+            console.log(`Error:`, e.response?.data ? JSON.stringify(e.response.data) : e.message);
+        } else {
+            console.log(`Error:`, e instanceof Error ? e.message : 'Unknown error');
+        }
     }
 }
 
