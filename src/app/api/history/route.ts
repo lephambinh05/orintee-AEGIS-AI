@@ -60,12 +60,22 @@ export async function POST(request: NextRequest) {
     // Aegis Score: integer 0-100 (Math.round + clamp)
     const aegisScore = Math.min(Math.max(Math.round(rawScore || 0), 0), 100);
 
-    // StopLoss and TakeProfit validation (strict per user request)
-    if (stopLoss >= entryPrice) {
-      return errorResponse('stopLoss must be less than entryPrice', 'INVALID_STOPLOSS', 400);
-    }
-    if (takeProfit <= entryPrice) {
-      return errorResponse('takeProfit must be greater than entryPrice', 'INVALID_TAKEPROFIT', 400);
+    // StopLoss and TakeProfit validation (dynamic based on isLong)
+    if (isLong) {
+      if (stopLoss >= entryPrice) {
+        return errorResponse('Long: stopLoss must be less than entryPrice', 'INVALID_STOPLOSS', 400);
+      }
+      if (takeProfit <= entryPrice) {
+        return errorResponse('Long: takeProfit must be greater than entryPrice', 'INVALID_TAKEPROFIT', 400);
+      }
+    } else {
+      // Short position logic
+      if (stopLoss <= entryPrice) {
+        return errorResponse('Short: stopLoss must be greater than entryPrice', 'INVALID_STOPLOSS', 400);
+      }
+      if (takeProfit >= entryPrice) {
+        return errorResponse('Short: takeProfit must be less than entryPrice', 'INVALID_TAKEPROFIT', 400);
+      }
     }
 
     await connectDB();
