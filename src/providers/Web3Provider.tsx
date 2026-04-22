@@ -11,7 +11,7 @@ import '@rainbow-me/rainbowkit/styles.css';
 // 1. Configure RainbowKit & Wagmi
 const config = getDefaultConfig({
   appName: 'AEGIS AI',
-  projectId: 'YOUR_PROJECT_ID_PLACEHOLDER', // Required for WalletConnect
+  projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID || '331002d28f77395a18a9947700201234', // Required for WalletConnect
   chains: [baseSepolia],
   ssr: true,
   transports: {

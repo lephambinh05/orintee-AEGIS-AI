@@ -21,24 +21,10 @@ const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://sepolia.base.org';
 const EXPLORER_URL = process.env.NEXT_PUBLIC_BLOCK_EXPLORER || 'https://sepolia.basescan.org';
 const SYMBOL = process.env.NEXT_PUBLIC_SYMBOL || 'ETH';
 
-const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '') as `0x${string}`;
+const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '') as string;
 
-const STRATEGY_ABI = [
-  {
-    "name": "savePrediction",
-    "type": "function",
-    "stateMutability": "nonpayable",
-    "inputs": [
-      { "name": "_coinPair", "type": "string" },
-      { "name": "_entryPrice", "type": "uint256" },
-      { "name": "_stopLoss", "type": "uint256" },
-      { "name": "_takeProfit", "type": "uint256" },
-      { "name": "_aegisScore", "type": "uint8" },
-      { "name": "_isLong", "type": "bool" }
-    ],
-    "outputs": [{ "type": "uint256" }]
-  }
-] as const;
+import { ethers } from 'ethers';
+import AegisABI from '@/config/AegisABI.json';
 
 export function useMetamask() {
   const { address: wagmiAddress, isConnected, chainId } = useAccount();
@@ -103,77 +89,98 @@ export function useMetamask() {
     aegisScore: number;
     isLong: boolean;
   }) => {
-    if (!isConnected || !wagmiAddress) return null;
+    // 1. Resolve multi-wallet conflict (e.g., MetaMask vs TronLink)
+    let ethereum = (window as any).ethereum;
+    if (ethereum?.providers?.length) {
+      ethereum = ethereum.providers.find((p: any) => p.isMetaMask) || ethereum.providers[0];
+    }
 
-    const isDemoMode = !CONTRACT_ADDRESS || CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000';
+    if (!ethereum || !wagmiAddress) {
+      console.error("[Web3] Ethereum provider or address missing");
+      return null;
+    }
+
+    console.log("[Web3] Step 1: Found Provider. Contract:", CONTRACT_ADDRESS);
+    if (!CONTRACT_ADDRESS || CONTRACT_ADDRESS === '') {
+      alert("LỖI: Chưa cấu hình NEXT_PUBLIC_CONTRACT_ADDRESS");
+      setIsProcessing(false);
+      return null;
+    }
 
     setIsProcessing(true);
     try {
-      if (isDemoMode) {
-        toast.warning(`Chế độ Demo: Đang giả lập giao dịch trên ${CHAIN_NAME}...`, {
-          description: "Vui lòng ký xác nhận (không tốn phí Gas)."
-        });
-        
-        await signMessageAsync({ 
-          message: `Aegis AI Strategy: ${params.coinPair} @ ${params.entryPrice}` 
-        });
-        
-        toast.loading("Đang mô phỏng ghi dữ liệu...", { id: 'demo-loading' });
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        const mockHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('');
-        
-        toast.success("Giả lập thành công!", { 
-          id: 'demo-loading',
-          description: "Dữ liệu đã được lưu vào lịch sử." 
-        });
-        
-        return mockHash;
-      }
+      console.log("[Web3] Step 2: Initializing Web3Provider");
+      const provider = new ethers.providers.Web3Provider(ethereum, "any");
       
-      const scale = (val: number) => BigInt(Math.round(val * 1e8));
+      console.log("[Web3] Step 3: Getting Signer");
+      const signer = provider.getSigner();
+
+      console.log("[Web3] Step 4: Validating Network");
+      const network = await provider.getNetwork();
+      console.log("[Web3] Current Chain ID:", network.chainId);
+
+      if (network.chainId !== CHAIN_ID) {
+        console.log("[Web3] Wrong network. Expected:", CHAIN_ID);
+        toast.warning(`Đang chuyển mạng sang ${CHAIN_NAME}...`);
+        await switchToTargetChain();
+        setIsProcessing(false);
+        return null;
+      }
+
+      console.log("[Web3] Step 5: Initializing ContractInstance");
+      const contract = new ethers.Contract(
+        CONTRACT_ADDRESS,
+        AegisABI,
+        signer
+      );
+
+      // Scaling logic: Contract expects 10^8 for prices
+      const scale = (val: number) => ethers.utils.parseUnits(val.toFixed(8), 8);
 
       toast.info("Vui lòng xác nhận giao dịch trên ví...");
 
-      const hash = await writeContractAsync({
-        address: CONTRACT_ADDRESS,
-        abi: STRATEGY_ABI,
-        functionName: 'savePrediction',
-        args: [
-          params.coinPair,
-          scale(params.entryPrice),
-          scale(params.stopLoss),
-          scale(params.takeProfit),
-          Math.round(params.aegisScore),
-          params.isLong
-        ],
+      const tx = await contract.savePrediction(
+        params.coinPair,
+        scale(params.entryPrice),
+        scale(params.stopLoss),
+        scale(params.takeProfit),
+        Math.round(params.aegisScore),
+        params.isLong
+      );
+
+      toast.loading("Giao dịch đã gửi. Đang chờ xác nhận trên Base Sepolia...", { id: 'blockchain-tx' });
+
+      const receipt = await tx.wait();
+
+      toast.success("Minh bạch On-chain thành công!", {
+        id: 'blockchain-tx',
+        description: `Giao dịch đã được confirm. Hash: ${receipt.transactionHash.slice(0, 10)}...`
       });
 
-      toast.success("Giao dịch đã gửi!", {
-        description: `Tx Hash: ${hash.slice(0, 10)}... Đang chờ xác nhận.`
-      });
-
-      return hash;
+      return receipt.transactionHash;
     } catch (error: any) {
       console.error("Execution failed:", error);
+      alert("GIAO DỊCH LỖI: " + (error.message || "Không xác định"));
       
-      if (error.message?.toLowerCase().includes("user rejected")) {
+      const errorMessage = error.message?.toLowerCase() || "";
+      
+      if (errorMessage.includes("user rejected")) {
         toast.error("Giao dịch bị từ chối", { description: "Người dùng đã hủy yêu cầu ký trên ví." });
-      } else if (error.message?.toLowerCase().includes("insufficient funds") || error.name === 'InsufficientFundsError') {
-        toast.error("Insufficient funds for gas", { 
-          description: `Tài khoản của bạn không đủ ${SYMBOL} để trả phí giao dịch trên ${CHAIN_NAME}. Vui lòng nhận thêm từ Faucet.`,
+      } else if (errorMessage.includes("insufficient funds")) {
+        toast.error("Không đủ số dư", { 
+          description: `Tài khoản không đủ ${SYMBOL} để trả phí gas trên ${CHAIN_NAME}.`,
           duration: 6000
         });
       } else {
         toast.error("Giao dịch thất bại", { 
-          description: error.shortMessage || "Đã xảy ra lỗi không xác định. Vui lòng thử lại." 
+          description: error.reason || "Đã xảy ra lỗi khi tương tác với Smart Contract." 
         });
       }
       return null;
     } finally {
       setIsProcessing(false);
     }
-  }, [isConnected, wagmiAddress, writeContractAsync, signMessageAsync]);
+  }, [wagmiAddress, CHAIN_ID, CHAIN_NAME, CONTRACT_ADDRESS, SYMBOL, switchToTargetChain]);
 
   return {
     address,

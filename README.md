@@ -56,3 +56,9 @@ Identity is managed entirely via the user's wallet address.
 The system enforces security via the **Blockchain Proof (`txHash`)**:
 - **Uniqueness**: Every transaction hash is indexed as a unique constraint in MongoDB, preventing duplicate strategy submissions.
 - **Anti-Spam**: Successful database entry requires a valid `txHash`, ensuring that only users who have actually executed on-chain have their data recorded.
+
+0164cd6d2d891504b85d0f7263648dff
+
+RTsv_g_q9WWOQLlepuTbdSkbdzz4yd7ajwAuhkAVmVQTQVLsb4A-Lsvjo5TYtbGx2iRKn4MWBZYdDLPWLg_OhA
+
+SỬ DỤNG https://thirdweb.com/team/moji-studio/ssssss-0164cd/contract/84532/0xdf1d1968c54e6d537bbdad0a9ed481c22f69f4aa để tạo smart contract

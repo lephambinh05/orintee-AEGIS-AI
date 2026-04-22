@@ -1,0 +1,52 @@
+[
+  {
+    "inputs": [
+      { "internalType": "string", "name": "_coinPair", "type": "string" },
+      { "internalType": "uint256", "name": "_entryPrice", "type": "uint256" },
+      { "internalType": "uint256", "name": "_stopLoss", "type": "uint256" },
+      { "internalType": "uint256", "name": "_takeProfit", "type": "uint256" },
+      { "internalType": "uint8", "name": "_aegisScore", "type": "uint8" },
+      { "internalType": "bool", "name": "_isLong", "type": "bool" }
+    ],
+    "name": "savePrediction",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTotalStrategies",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "_id", "type": "uint256" }
+    ],
+    "name": "getStrategy",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "string", "name": "coinPair", "type": "string" },
+          { "internalType": "uint256", "name": "entryPrice", "type": "uint256" },
+          { "internalType": "uint256", "name": "stopLoss", "type": "uint256" },
+          { "internalType": "uint256", "name": "takeProfit", "type": "uint256" },
+          { "internalType": "uint8", "name": "aegisScore", "type": "uint8" },
+          { "internalType": "bool", "name": "isLong", "type": "bool" },
+          { "internalType": "address", "name": "creator", "type": "address" },
+          { "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+        ],
+        "internalType": "struct AegisStrategyRegistry.Strategy",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
