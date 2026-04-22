@@ -9,7 +9,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 export function GlobalNav() {
   const pathname = usePathname();
-  const { switchToTargetChain, isProcessing, disconnect } = useMetamask();
+  const { disconnect } = useMetamask();
 
   const navItems = [
     { 
@@ -124,26 +124,6 @@ export function GlobalNav() {
                         type="button"
                         className="btn-secondary !py-1.5 !px-3 text-[13px] font-semibold flex items-center gap-2"
                       >
-                        {chain.hasIcon && (
-                          <div
-                            style={{
-                              background: chain.iconBackground,
-                              width: 12,
-                              height: 12,
-                              borderRadius: 999,
-                              overflow: 'hidden',
-                              marginRight: 4,
-                            }}
-                          >
-                            {chain.iconUrl && (
-                              <img
-                                alt={chain.name ?? 'Chain icon'}
-                                src={chain.iconUrl}
-                                style={{ width: 12, height: 12 }}
-                              />
-                            )}
-                          </div>
-                        )}
                         {chain.name}
                       </button>
 
@@ -154,9 +134,6 @@ export function GlobalNav() {
                       >
                         <div className="w-2 h-2 rounded-full bg-green-primary" />
                         {account.displayName}
-                        {account.displayBalance
-                          ? ` (${account.displayBalance})`
-                          : ''}
                       </button>
 
                       <button
@@ -178,4 +155,3 @@ export function GlobalNav() {
     </nav>
   );
 }
-

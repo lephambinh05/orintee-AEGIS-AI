@@ -6,9 +6,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function corsHeaders() {
-  const allowedOrigin = process.env.NEXT_PUBLIC_APP_URL || '*';
+  const allowedOrigin = process.env.NEXT_PUBLIC_APP_URL;
+  
+  if (!allowedOrigin && process.env.NODE_ENV === 'production') {
+    throw new Error('SECURITY ERROR: NEXT_PUBLIC_APP_URL must be defined in production.');
+  }
+
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Origin': allowedOrigin || '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };

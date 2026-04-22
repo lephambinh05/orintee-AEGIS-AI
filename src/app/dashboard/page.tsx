@@ -26,6 +26,18 @@ export default function Dashboard() {
   const { data: priceData, isLoading: isPriceLoading } = usePriceQuery(selectedAsset);
   const { data: klines, isLoading: isKlinesLoading } = useKlinesQuery(selectedAsset, timeframe);
   const { data: analysis, isLoading: isAnalyzeLoading } = useAnalyzeQuery(selectedAsset);
+
+  // UX Optimization: Alert user when using mock data
+  useEffect(() => {
+    const usingMock = (priceData as any)?.isMock || (klines as any)?.isMock || (analysis as any)?.isMock;
+    if (usingMock) {
+      toast.warning("Chế độ mô phỏng", {
+        description: "Hệ thống đang sử dụng dữ liệu mô phỏng do API đối tác (DAA/Binance) quá tải.",
+        duration: 5000,
+        id: 'mock-data-warning'
+      });
+    }
+  }, [priceData, klines, analysis]);
   
   // 2. Persistence Layer - Mutation
   const saveStrategyMutation = useSaveStrategy();

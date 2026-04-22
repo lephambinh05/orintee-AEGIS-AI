@@ -1,50 +1,43 @@
 'use client';
 
-import { ReactNode, useState, useEffect } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import '@rainbow-me/rainbowkit/styles.css';
+import {
+  getDefaultConfig,
+  RainbowKitProvider,
+  darkTheme,
+} from '@rainbow-me/rainbowkit';
 import { WagmiProvider, http } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
-import { getDefaultConfig, RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
+import {
+  QueryClientProvider,
+  QueryClient,
+} from "@tanstack/react-query";
+import { ReactNode, useState } from 'react';
 
-import '@rainbow-me/rainbowkit/styles.css';
-
-// 1. Configure RainbowKit & Wagmi
 const config = getDefaultConfig({
   appName: 'AEGIS AI',
-  projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID || '331002d28f77395a18a9947700201234', // Required for WalletConnect
+  projectId: 'YOUR_PROJECT_ID', // Recommended: replace with real WalletConnect ID
   chains: [baseSepolia],
   ssr: true,
   transports: {
-    [baseSepolia.id]: http(),
+    [baseSepolia.id]: http(process.env.NEXT_PUBLIC_RPC_URL),
   },
 });
 
-export function Web3Provider({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 5000,
-        retry: 1,
-        refetchOnWindowFocus: false,
-      },
-    },
-  }));
+const queryClient = new QueryClient();
 
+export function Web3Provider({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider 
-          theme={darkTheme({
-            accentColor: '#10B981', // green-primary
-            accentColorForeground: 'white',
-            borderRadius: 'medium',
-          })}
-          modalSize="compact"
-        >
+        <RainbowKitProvider theme={darkTheme({
+          accentColor: '#16a34a',
+          accentColorForeground: 'white',
+          borderRadius: 'medium',
+        })}>
           {children}
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
 }
-

@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       stopLoss,
       takeProfit,
       isLong,
-      status: Math.random() > 0.5 ? 'win' : 'loss' // Keeping existing random status
+      status: 'pending'
     });
 
     // 3. Save with unique txHash handling
