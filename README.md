@@ -1,7 +1,7 @@
 # 🛡️ AEGIS AI Strategy Engine
 
 <p align="center">
-  <img src="aegis_hero_mockup_1776891246216.png" alt="AEGIS AI Hero" width="800px" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
+  <img src="orintee_logo_main_1776891453876.png" alt="ORINTEE Logo" width="500px" style="border-radius: 12px;" />
 </p>
 
 <p align="center">
@@ -31,7 +31,7 @@ graph TD
     D -->|Execute| E[Smart Contract: Base Sepolia]
     E -->|txHash| F[MongoDB: Strategic Proofs]
     F -->|Real-time| G[User Dashboard]
-    
+
     style C fill:#16a34a,stroke:#fff,stroke-width:2px,color:#fff
     style E fill:#2563eb,stroke:#fff,stroke-width:2px,color:#fff
     style G fill:#000,stroke:#16a34a,stroke-width:4px,color:#fff
@@ -39,7 +39,7 @@ graph TD
 
 ---
 
-## ⚡ Tính Năng "Xịn Xò"
+## ⚡ Tính Năng
 
 | Tính năng | Chi tiết | Lợi ích |
 | :--- | :--- | :--- |
@@ -107,6 +107,6 @@ Hệ thống được thiết kế với tư duy **Security First**:
 
 ---
 <p align="center">
-  Phát triển với ❤️ bởi <b>Moji Studio</b> <br/>
+  Phát triển với ❤️ bởi <b>ORINTEE</b> with loveee <br/>
   <i>"Nâng tầm giao dịch bằng công nghệ AI và Blockchain"</i>
 </p>
