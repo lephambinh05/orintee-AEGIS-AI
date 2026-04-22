@@ -1,64 +1,112 @@
-# Aegis AI Platform
+# 🛡️ AEGIS AI Strategy Engine
 
-A high-fidelity crypto analysis and strategy execution platform built with Next.js 16, MongoDB, and Base Sepolia.
+<p align="center">
+  <img src="aegis_hero_mockup_1776891246216.png" alt="AEGIS AI Hero" width="800px" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
+</p>
 
-## 🚀 Quick Start
-
-### 1. Prerequisites
-- Docker & Docker Compose
-- MetaMask installed in your browser
-
-### 2. Configuration
-Create a `.env` file in the root directory:
-```env
-MONGODB_URI=mongodb://aegis:aegis123@mongo:27017/aegisdb?authSource=admin
-NODE_ENV=development
-NEXT_PUBLIC_CHAIN_ID=0x14A34
-NEXT_PUBLIC_CONTRACT_ADDRESS=0x9115Db7012D4C2C32414705030206D39050Be6Af
-NEXT_PUBLIC_APP_URL=http://localhost:80
-```
-
-### 3. Deploy with Docker
-```bash
-docker compose up --build -d
-```
-The application will be available at [http://localhost](http://localhost).
-
-## 🛠️ Tech Stack
-- **Frontend**: Next.js 16 (App Router), TypeScript, Tailwind CSS, Framer Motion.
-- **Backend API**: Next.js API Routes, Mongoose, Zod.
-- **Infrastructure**: MongoDB 7, Nginx (Reverse Proxy), Node.js 20 Alpine.
-- **Web3**: Wagmi, Viem, RainbowKit, Base Sepolia Testnet.
-
-## 🧪 Testing
-To run the end-to-end verification suite:
-1. Ensure Docker containers are healthy.
-2. Visit the dashboard at [http://localhost/dashboard](http://localhost/dashboard).
-3. Connect MetaMask and verify the Base Sepolia network auto-switch.
-4. Execute a strategy and verify the on-chain proof in the History tab.
+<p align="center">
+  <a href="https://sepolia.basescan.org/">
+    <img src="https://img.shields.io/badge/Chain-Base_Sepolia-blue?style=for-the-badge&logo=base&logoColor=white" alt="Base" />
+  </a>
+  <a href="https://nextjs.org/">
+    <img src="https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
+  </a>
+  <a href="https://ethers.org/">
+    <img src="https://img.shields.io/badge/Web3-Ethers.js-orange?style=for-the-badge&logo=ethereum&logoColor=white" alt="Ethers" />
+  </a>
+</p>
 
 ---
 
-## 🛡️ Multi-User Architecture & Security
+## 🌌 Overview
+**AEGIS AI** không chỉ là một Dashboard Crypto; nó là một **Chiến thần Quản trị Rủi ro** hoạt động trên nền tảng AI và Blockchain. Dự án được thiết kế để mang lại sự an tâm tuyệt đối cho các nhà giao dịch thông qua các phân tích kỹ thuật chuẩn xác và minh bạch hóa 100% dữ liệu thực thi.
 
-Aegis AI is built to handle multiple concurrent users with production-grade stability and security:
+### 🧩 Kiến trúc Hệ thống (Workflow)
 
-### 1. Wallet-Based Isolation
-Identity is managed entirely via the user's wallet address.
-- **Frontend Isolation**: User sessions are browser-isolated via `localStorage`.
-- **Backend Isolation**: API responses are strictly filtered by the connected wallet address.
+```mermaid
+graph TD
+    A[Market Data: Binance] -->|Direct Server Call| B(Shared Market Lib)
+    B -->|Fast Fetch| C{AEGIS AI Engine}
+    C -->|RSI/ATR/Sentiment| D[Strategy Analysis]
+    D -->|Execute| E[Smart Contract: Base Sepolia]
+    E -->|txHash| F[MongoDB: Strategic Proofs]
+    F -->|Real-time| G[User Dashboard]
+    
+    style C fill:#16a34a,stroke:#fff,stroke-width:2px,color:#fff
+    style E fill:#2563eb,stroke:#fff,stroke-width:2px,color:#fff
+    style G fill:#000,stroke:#16a34a,stroke-width:4px,color:#fff
+```
 
-### 2. Infrastructure Protection
-- **Nginx Rate Limiting**: Protects the API layer from DDoS and spam by limiting requests to **5 req/s per IP** with a burst threshold of 10.
-- **Database Pooling**: Configured with `maxPoolSize: 10` to ensure stable resource allocation under heavy concurrent load.
+---
 
-### 3. Trustless Verification
-The system enforces security via the **Blockchain Proof (`txHash`)**:
-- **Uniqueness**: Every transaction hash is indexed as a unique constraint in MongoDB, preventing duplicate strategy submissions.
-- **Anti-Spam**: Successful database entry requires a valid `txHash`, ensuring that only users who have actually executed on-chain have their data recorded.
+## ⚡ Tính Năng "Xịn Xò"
 
-0164cd6d2d891504b85d0f7263648dff
+| Tính năng | Chi tiết | Lợi ích |
+| :--- | :--- | :--- |
+| **AegisScore** | AI chấm điểm từ 0-100 | Quyết định vào lệnh khoa học |
+| **Risk Guard** | Tự động tính SL/TP theo ATR | Bảo vệ vốn tuyệt đối |
+| **On-chain Proof** | Ghi sổ cái Base Sepolia | Không thể gian lận dữ liệu |
+| **Shimmer UI** | Hiệu ứng tải dữ liệu cao cấp | Trải nghiệm mượt mà, không giật lag |
 
-RTsv_g_q9WWOQLlepuTbdSkbdzz4yd7ajwAuhkAVmVQTQVLsb4A-Lsvjo5TYtbGx2iRKn4MWBZYdDLPWLg_OhA
+---
 
-SỬ DỤNG https://thirdweb.com/team/moji-studio/ssssss-0164cd/contract/84532/0xdf1d1968c54e6d537bbdad0a9ed481c22f69f4aa để tạo smart contract
+## 🤖 AI Logic & Risk Management
+
+Hệ thống sử dụng bộ 3 chỉ số vàng để đưa ra quyết định:
+- **RSI (Relative Strength Index)**: Xác định vùng quá mua/quá bán.
+- **ATR (Average True Range)**: Đo lường biến động để đặt Stop Loss thông minh.
+- **Sentiment Analysis**: Phân tích tâm lý thị trường thời gian thực.
+
+> [!TIP]
+> **AegisScore > 60**: Tín hiệu Bullish mạnh mẽ - Ưu tiên lệnh Long.
+> **AegisScore < 40**: Tín hiệu Bearish rõ rệt - Ưu tiên lệnh Short.
+
+---
+
+## 📂 Cấu trúc Dự án (Pro Layout)
+
+```bash
+OrinTee/
+├── 📜 contracts/          # Smart Contracts (Solidity)
+├── 📂 src/
+│   ├── 📂 app/            # Next.js App Router (UI & API)
+│   ├── 📂 components/     # UI Components (Premium UI)
+│   ├── 📂 hooks/          # Web3 & Logic Hooks (Pure Ethers)
+│   ├── 📂 lib/            # Shared Library (Binance, Utils)
+│   ├── 📂 models/         # MongoDB Schemas
+│   └── 📂 store/          # Global State (Zustand)
+├── 🐳 docker-compose.yml  # Production Orchestration
+└── ⚙️ vercel.json         # Automated PnL Cron Config
+```
+
+---
+
+## 🚀 Cài Đặt Trong 1 Phút
+
+1. **Clone dự án & Cài đặt**:
+   ```bash
+   git clone https://github.com/lephambinh05/orintee-AEGIS-AI.git
+   npm install
+   ```
+
+2. **Cấu hình môi trường**:
+   Copy file `.env.example` thành `.env` và điền các Key bí mật của bạn.
+
+3. **Chạy ứng dụng**:
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## 🛡️ Bảo Mật & Tối Ưu
+Hệ thống được thiết kế với tư duy **Security First**:
+- **CORS Restricted**: Chống gọi API "lậu".
+- **Self-fetching Fix**: Chống treo Server (Deadlock).
+- **Safe BigInt**: Chính xác tuyệt đối từng đơn vị WEI.
+
+---
+<p align="center">
+  Phát triển với ❤️ bởi <b>Moji Studio</b> <br/>
+  <i>"Nâng tầm giao dịch bằng công nghệ AI và Blockchain"</i>
+</p>
