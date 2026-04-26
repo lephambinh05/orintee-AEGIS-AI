@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Web3Provider } from "@/providers/Web3Provider";
 import { Toaster } from 'sonner';
+import { initCron } from "@/lib/cron-init";
+
+// Khởi chạy tự động Cron job khi Next.js Server (hoặc app) khởi động
+initCron();
 
 export const metadata: Metadata = {
   title: "AEGIS AI | Crypto Risk Management",
