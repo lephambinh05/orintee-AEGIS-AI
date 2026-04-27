@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/shared/Badge';
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useMetamask } from '@/hooks/useMetamask';
 
 const fadeInUp = {
@@ -23,12 +23,24 @@ const stagger = {
 export default function LandingPage() {
   const { isConnected, connect, isProcessing } = useMetamask();
   const router = useRouter();
+  const [clickedConnect, setClickedConnect] = useState(false);
 
   useEffect(() => {
-    if (isConnected) {
+    // Only auto-redirect to dashboard if the user explicitly clicked the connect button during this session
+    if (isConnected && clickedConnect) {
       router.push('/dashboard');
     }
-  }, [isConnected, router]);
+  }, [isConnected, clickedConnect, router]);
+
+  const handleAction = () => {
+    if (isConnected) {
+      router.push('/dashboard');
+    } else {
+      setClickedConnect(true);
+      connect();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white relative overflow-hidden w-full">
       {/* Dot Pattern Background */}
@@ -54,11 +66,11 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-4">
           <button 
-            onClick={connect} 
+            onClick={handleAction} 
             disabled={isProcessing}
             className="btn-secondary flex items-center gap-2"
           >
-            {isProcessing ? "Connecting..." : "Connect Wallet →"}
+            {isConnected ? "Dashboard →" : isProcessing ? "Connecting..." : "Connect Wallet →"}
           </button>
         </div>
       </motion.header>
@@ -97,7 +109,7 @@ export default function LandingPage() {
           transition={{ ...fadeInUp.transition, delay: 0.3 }}
         >
           <button 
-            onClick={connect}
+            onClick={handleAction}
             disabled={isProcessing}
             className="btn-primary py-3.5 px-8 text-[15px]"
           >
