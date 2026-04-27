@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const response = await axios.get(url, {
       headers: {
-        'Authorization': 'd8425488094ebe8396ae872ea7137c6e'
+        'Authorization': process.env.DAA_API_KEY || ''
       },
       timeout: 10000
     });
